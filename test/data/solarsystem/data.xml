@@ -1,0 +1,58 @@
+<solarsystem>
+  <type>star</type>
+  <name>Sun</name>
+  <properties>
+    <mass>1.989 × 10^30 kg</mass>
+    <radius>696,340 km</radius>
+    <spectral_type>G2V</spectral_type>
+  </properties>
+</solarsystem>
+<solarsystem>
+  <type>planet</type>
+  <name>Earth</name>
+  <properties>
+    <mass>5.972 × 10^24 kg</mass>
+    <radius>6,371 km</radius>
+    <orbit>
+      <semi_major_axis>1 AU</semi_major_axis>
+      <eccentricity>0.0167</eccentricity>
+    </orbit>
+    <moons>
+      <moon>
+        <name>Moon</name>
+        <properties>
+          <mass>7.342 × 10^22 kg</mass>
+          <radius>1737.4 km</radius>
+        </properties>
+      </moon>
+    </moons>
+  </properties>
+</solarsystem>
+<solarsystem>
+  <type>planet</type>
+  <name>Mars</name>
+  <properties>
+    <mass>6.417 × 10^23 kg</mass>
+    <radius>3,389.5 km</radius>
+    <orbit>
+      <semi_major_axis>1.524 AU</semi_major_axis>
+      <eccentricity>0.0934</eccentricity>
+    </orbit>
+    <moons>
+      <moon>
+        <name>Phobos</name>
+        <properties>
+          <mass>1.0659 × 10^16 kg</mass>
+          <radius>11.2667 km</radius>
+        </properties>
+      </moon>
+      <moon>
+        <name>Deimos</name>
+        <properties>
+          <mass>1.4762 × 10^15 kg</mass>
+          <radius>6.2 km</radius>
+        </properties>
+      </moon>
+    </moons>
+  </properties>
+</solarsystem>

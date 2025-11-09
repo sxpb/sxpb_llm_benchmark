@@ -1,0 +1,54 @@
+solarsystem {
+  type: "star"
+  name: "Sun"
+  properties {
+    mass: "1.989 × 10^30 kg"
+    radius: "696,340 km"
+    spectral_type: "G2V"
+  }
+}
+solarsystem {
+  type: "planet"
+  name: "Earth"
+  properties {
+    mass: "5.972 × 10^24 kg"
+    radius: "6,371 km"
+    orbit {
+      semi_major_axis: "1 AU"
+      eccentricity: "0.0167"
+    }
+    moons {
+      name: "Moon"
+      properties {
+        mass: "7.342 × 10^22 kg"
+        radius: "1737.4 km"
+      }
+    }
+  }
+}
+solarsystem {
+  type: "planet"
+  name: "Mars"
+  properties {
+    mass: "6.417 × 10^23 kg"
+    radius: "3,389.5 km"
+    orbit {
+      semi_major_axis: "1.524 AU"
+      eccentricity: "0.0934"
+    }
+    moons {
+      name: "Phobos"
+      properties {
+        mass: "1.0659 × 10^16 kg"
+        radius: "11.2667 km"
+      }
+    }
+    moons {
+      name: "Deimos"
+      properties {
+        mass: "1.4762 × 10^15 kg"
+        radius: "6.2 km"
+      }
+    }
+  }
+}

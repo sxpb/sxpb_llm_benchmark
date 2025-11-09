@@ -1,0 +1,37 @@
+[project]
+name = "sxpb_llm_benchmark"
+version = "0.0.0"
+authors = [
+]
+dependencies = [
+    "pyyaml>=6.0.3",
+    "llama-cpp-python>=0.3.16",
+    "huggingface-hub>=0.20.3",
+    "psutil>=5.9.8",
+    "sxpb @ git+https://github.com/sxproto/sxpb-py@f93b5f0ef53f31773f9ac0721c8ef02e3c0cbbd0",
+]
+requires-python = ">=3.9"
+
+[build-system]
+requires = ["pdm-pep517>=1.0.0"]
+build-backend = "pdm.pep517.api"
+
+[tool.pdm.dev-dependencies]
+dev = [
+    "pytest",
+    "ruff",
+    "ty",
+]
+
+[tool.pytest.ini_options]
+addopts = "--showlocals"
+pythonpath = ["."]
+
+
+[tool.pdm.scripts]
+benchmark = "python -m src.run_benchmark"
+check-format = "ruff check"
+check-type = "ty check"
+tidy = "ruff format"
+lint = {composite = ["check-format", "check-type"]}
+test = "pytest"
