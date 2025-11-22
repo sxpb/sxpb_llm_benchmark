@@ -9,6 +9,7 @@ def create_prompt(data_format: str, raw_file_content: str, question: str) -> str
     prompt = textwrap.dedent(f"""
         You are an AI fact lookup engine who answers questions about given reference data.
         Provide the answer directly in the last line of your response, starting with `Final Answer:`.
+        When presenting data, copy text content verbatim from the reference in order to satisfy string equality.
 
         ### Example
         Question: What is the capital of Michigan?
