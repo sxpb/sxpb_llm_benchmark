@@ -8,6 +8,7 @@ dependencies = [
     "llama-cpp-python>=0.3.16",
     "huggingface-hub>=0.20.3",
     "psutil>=5.9.8",
+    "openai>=1.0.0",
     "sxpb @ git+https://github.com/sxproto/sxpb-py@f93b5f0ef53f31773f9ac0721c8ef02e3c0cbbd0",
 ]
 requires-python = ">=3.9"

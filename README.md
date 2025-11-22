@@ -32,6 +32,8 @@ To save the benchmark results, use the `--log-dir` flag.
 pdm run benchmark -- --log-dir result
 ```
 
+### Local GGUF
+
 Other small models can be used as well, as long as they're GGUF files with `chat_template` metadata. You can specify a model from Hugging Face Hub or a local file path using the `--model` flag.
 
 To use a model from Hugging Face, provide the repository and file name in the format `repo_id/file_name`:
@@ -43,4 +45,12 @@ pdm run benchmark --model unsloth/Llama-3.2-1B-Instruct-GGUF/Llama-3.2-1B-Instru
 To use a model from a local file:
 ```shell
 pdm run benchmark --model /path/to/your/model.gguf
+```
+
+### OpenAI API
+
+You can also run benchmarks through an OpenAI-compatible API by providing `--api-url` and `--api-key` flags.
+For example, if you're running Ollama on localhost with the `gpt-oss:20b` model installed, run:
+```shell
+pdm run benchmark --model gpt-oss:20b --api-url http://localhost:11434/v1 --api-key ignored
 ```

@@ -1,10 +1,8 @@
 import argparse
 import os
-import psutil
 import sxpb
+import sxpb.jsonutil
 import time
-from llama_cpp import Llama
-from huggingface_hub import hf_hub_download
 from src.prompt_creation import create_prompt
 from src.generate_data import (
     generate_json,
@@ -15,10 +13,10 @@ from src.generate_data import (
     generate_sxpb,
 )
 from typing import Any, Dict, List, Optional
+from src.llm_api import LlmApi, LlamaCppApi, OpenAiApi
 
 # Global variable to hold the LLM instance
-llm: Optional[Llama] = None
-DEFAULT_N_THREADS = 4
+llm: Optional[LlmApi] = None
 
 SUPPORTED_FORMATS = sorted(
     [
@@ -40,73 +38,13 @@ SUPPORTED_FORMATS = sorted(
 )
 
 
-def initialize_llm(model_identifier: str) -> None:
-    """Initializes the LLM instance."""
-    global llm
-    model_path: str
-
-    if os.path.exists(model_identifier):
-        print(f"Loading model from local path: {model_identifier}")
-        model_path = model_identifier
-    else:
-        print(
-            f"Model identifier is not a local path, treating as Hugging Face repo: {model_identifier}"
-        )
-        try:
-            repo_id, filename = model_identifier.rsplit("/", 1)
-        except ValueError:
-            raise ValueError(
-                "Invalid Hugging Face model identifier. Expected format: 'repo_id/file_name'"
-            )
-
-        print(f"Downloading model: {repo_id}/{filename}")
-        model_path = hf_hub_download(repo_id=repo_id, filename=filename)
-        print(f"Model downloaded to: {model_path}")
-
-    try:
-        # Get the number of physical cores for inference
-        physical_cores = psutil.cpu_count(logical=False)
-        n_threads = physical_cores if physical_cores is not None else DEFAULT_N_THREADS
-
-        # Get the number of logical cores for batch processing
-        logical_cores = psutil.cpu_count(logical=True)
-        n_threads_batch = (
-            logical_cores if logical_cores is not None else DEFAULT_N_THREADS
-        )
-    except Exception:
-        # Fallback to a default value if psutil fails
-        n_threads = DEFAULT_N_THREADS
-        n_threads_batch = DEFAULT_N_THREADS
-
-    llm = Llama(
-        model_path=model_path,
-        n_ctx=8192,
-        n_threads=n_threads,
-        n_threads_batch=n_threads_batch,
-        n_gpu_layers=0,  # Set to 0 for CPU inference
-        verbose=False,
-    )
-
-
 def call_llm(prompt: str, log_context_file: Optional[str] = None) -> Dict[str, Any]:
     """Calls the local LLM to get a response and returns answer and token usage."""
     if llm is None:
         raise Exception("LLM not initialized. Please call initialize_llm() first.")
 
-    messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
-
-    output: Any = llm.create_chat_completion(
-        messages,
-        max_tokens=4000,
-    )
-
-    assert isinstance(output, dict)
-    content = output["choices"][0]["message"]["content"]
-    assert isinstance(content, str)
-    llm_answer: str = content.strip()
-
-    usage = output["usage"]
-    prompt_tokens = usage["prompt_tokens"]
+    llm_response = llm.call_llm(prompt)
+    llm_answer = llm_response["answer"]
 
     if log_context_file:
         with open(log_context_file, "a", encoding="utf-8") as f:
@@ -116,10 +54,7 @@ def call_llm(prompt: str, log_context_file: Optional[str] = None) -> Dict[str, A
             f.write(llm_answer)
             f.write("\n\n")
 
-    return {
-        "answer": llm_answer,
-        "prompt_tokens": prompt_tokens,
-    }
+    return llm_response
 
 
 def run_benchmark(
@@ -210,6 +145,7 @@ def run_benchmark(
 
 
 def main() -> None:
+    global llm
     parser = argparse.ArgumentParser(description="Run a benchmark for a given dataset.")
     parser.add_argument(
         "benchmark_name",
@@ -222,7 +158,19 @@ def main() -> None:
         "--model",
         type=str,
         default="ggml-org/gemma-3-270m-it-GGUF/gemma-3-270m-it-Q8_0.gguf",
-        help="The model to use. Can be a local file path or a Hugging Face repository ID in the format 'repo_id/file_name'.",
+        help="The model to use. For llama-cpp, this can be a local file path or a Hugging Face repo ID. For OpenAI/OpenRouter, this is the model name.",
+    )
+    parser.add_argument(
+        "--api-key",
+        type=str,
+        default=None,
+        help="API key for OpenAI or OpenRouter. Required if --api-url is set.",
+    )
+    parser.add_argument(
+        "--api-url",
+        type=str,
+        default=None,
+        help="If specified, runs the benchmark against an OpenAI-compatible API at this URL. Otherwise, runs locally using llama-cpp-python.",
     )
     parser.add_argument(
         "--format",
@@ -249,7 +197,13 @@ def main() -> None:
         with open(log_context_file, "w", encoding="utf-8") as f:
             pass
 
-    initialize_llm(args.model)
+    if args.api_url:
+        if not args.api_key:
+            raise ValueError("--api-key is required when using --api-url.")
+        llm = OpenAiApi(model=args.model, api_key=args.api_key, base_url=args.api_url)
+    else:
+        llm = LlamaCppApi(args.model)
+
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
     data_dir: str = os.path.join(script_dir, "../data")
 
@@ -305,33 +259,36 @@ def main() -> None:
             raw_sxpb_content: str = f.read()
 
         try:
-            plain_data = sxpb.loads(raw_sxpb_content, builtin_only=True)
+            native_data = sxpb.loads(raw_sxpb_content)
         except Exception as e:
             print(f"Error parsing {sxpb_file_path}: {e}")
             continue
-        if plain_data is None:
+        if native_data is None:
             print(f"Error: Could not parse data from {sxpb_file_path}")
             continue
 
-        # Get the root element name and the data list.
-        # This handles different data structures (e.g., dict at root vs. list at root).
-        root_element_name = "item"
-        data_list = plain_data
-        if isinstance(plain_data, dict):
-            # Assumes a single root key, which is the case for our data.sxpb
-            root_element_name = list(plain_data.keys())[0]
-            data_list = plain_data[root_element_name]
+        plain_data = sxpb.jsonutil.to_plain_types(native_data)
 
-        # Generate other data formats in-memory
+        data_list: List[Dict[str, Any]]
+        root_element_name = "item"
+        plain_data_dict: Dict[str, Any]
+
+        if not isinstance(plain_data, dict):
+            print(f"Error: data.sxpb root is not a dictionary in {sxpb_file_path}")
+            continue
+        plain_data_dict = plain_data
+        root_element_name = list(plain_data_dict.keys())[0]
+        data_list = plain_data_dict[root_element_name]
+
         generated_data: Dict[str, str] = {
-            "json": generate_json(plain_data),
-            "json.compact": generate_json(plain_data, mode="compact"),
-            "json.oneline": generate_json(plain_data, mode="oneline"),
+            "json": generate_json(plain_data_dict),
+            "json.compact": generate_json(plain_data_dict, mode="compact"),
+            "json.oneline": generate_json(plain_data_dict, mode="oneline"),
             "jsonl": generate_jsonl(data_list),
             "jsonl.compact": generate_jsonl(data_list, mode="compact"),
-            "sxpb": generate_sxpb(plain_data),
-            "sxpb.compact": generate_sxpb(plain_data, mode="compact"),
-            "sxpb.oneline": generate_sxpb(plain_data, mode="oneline"),
+            "sxpb": generate_sxpb(native_data),
+            "sxpb.compact": generate_sxpb(native_data, mode="compact"),
+            "sxpb.oneline": generate_sxpb(native_data, mode="oneline"),
             "txtpb": generate_txtpb(data_list, root_element_name),
             "txtpb.compact": generate_txtpb(
                 data_list, root_element_name, mode="compact"
@@ -339,7 +296,7 @@ def main() -> None:
             "txtpb.oneline": generate_txtpb(
                 data_list, root_element_name, mode="oneline"
             ),
-            "yaml": generate_yaml(plain_data),
+            "yaml": generate_yaml(plain_data_dict),
             "xml": generate_xml(data_list, root_element_name),
             "xml.compact": generate_xml(data_list, root_element_name, mode="compact"),
         }
