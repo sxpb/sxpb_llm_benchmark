@@ -373,7 +373,7 @@ dataset_names = [
 tabular_dataset: Dataset = {
   "name": 'tabular',
   "description": 'Uniform employee records',
-  "data": generate_employees(10),
+  "data": generate_employees(100),
   "metadata": {
     "supportsCSV": True,
     "structureClass": 'uniform',
@@ -384,7 +384,7 @@ tabular_dataset: Dataset = {
 nested_dataset: Dataset = {
   "name": 'nested',
   "description": 'E-commerce orders with nested structures',
-  "data": generate_orders(5),
+  "data": generate_orders(50),
   "metadata": {
     "supportsCSV": False,
     "structureClass": 'nested',
@@ -395,7 +395,7 @@ nested_dataset: Dataset = {
 analytics_dataset: Dataset = {
   "name": 'analytics',
   "description": 'Time-series analytics data',
-  "data": generate_analytics_data(6),
+  "data": generate_analytics_data(60),
   "metadata": {
     "supportsCSV": True,
     "structureClass": 'uniform',
@@ -407,7 +407,7 @@ github_dataset: Dataset = {
   "name": 'github',
   "description": 'Top 100 GitHub repositories',
   "data": {
-    "repositories": github_repos[:10],
+    "repositories": github_repos,
   },
   "metadata": {
     "supportsCSV": True,
@@ -419,7 +419,7 @@ github_dataset: Dataset = {
 event_logs_dataset: Dataset = {
   "name": 'event-logs',
   "description": 'Semi-uniform event logs',
-  "data": generate_event_logs(7),
+  "data": generate_event_logs(75),
   "metadata": {
     "supportsCSV": False,
     "structureClass": 'semi-uniform',
