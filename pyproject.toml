@@ -22,6 +22,7 @@ dev = [
     "pytest",
     "ruff",
     "ty",
+    "faker",
 ]
 
 [tool.pytest.ini_options]

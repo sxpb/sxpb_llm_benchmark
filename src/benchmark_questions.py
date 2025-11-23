@@ -1,4 +1,4 @@
-from typing import List, Dict, Any, TypedDict, Literal, Generator, Callable, Optional
+from typing import List, Dict, Any, TypedDict, Literal, Generator, Callable, Optional, cast
 from itertools import count
 from src.benchmark_datasets import (
     Employee,
@@ -10,31 +10,37 @@ from src.benchmark_datasets import (
     ACCURACY_DATASETS,
 )
 
+QuestionType = Literal[
+    'field-retrieval',
+    'retrieval',
+    'aggregation',
+    'filtering',
+    'structure-awareness',
+    'structural-validation',
+]
+
+AnswerType = Literal[
+    'string',
+    'integer',
+    'number',
+    'boolean',
+    'csv-list-ordered',
+    'csv-list-unordered',
+]
+
+
 class NormalizationOptions(TypedDict, total=False):
     case_sensitive: bool
     decimal_places: int
+
 
 class Question(TypedDict):
     id: str
     prompt: str
     groundTruth: str
-    type: Literal[
-        'field-retrieval',
-        'retrieval',
-        'aggregation',
-        'filtering',
-        'structure-awareness',
-        'structural-validation',
-    ]
+    type: QuestionType
     dataset: str
-    answerType: Literal[
-        'string',
-        'integer',
-        'number',
-        'boolean',
-        'csv-list-ordered',
-        'csv-list-unordered',
-    ]
+    answerType: AnswerType
     normalizationOptions: Optional[NormalizationOptions]
 
 
@@ -147,7 +153,7 @@ class QuestionBuilder:
         self._question["groundTruth"] = ground_truth
         return self
 
-    def type(self, q_type: Question["type"]) -> "QuestionBuilder":
+    def type(self, q_type: QuestionType) -> "QuestionBuilder":
         self._question["type"] = q_type
         return self
 
@@ -155,7 +161,7 @@ class QuestionBuilder:
         self._question["dataset"] = dataset
         return self
 
-    def answer_type(self, answer_type: Question["answerType"]) -> "QuestionBuilder":
+    def answer_type(self, answer_type: AnswerType) -> "QuestionBuilder":
         self._question["answerType"] = answer_type
         return self
 
@@ -166,7 +172,7 @@ class QuestionBuilder:
     def build(self) -> Question:
         if not all(k in self._question for k in ["id", "prompt", "groundTruth", "type", "dataset"]):
             raise ValueError("Incomplete question")
-        return self._question
+        return cast(Question, self._question)
 
 def rotate_questions(items: List[Any], generators: List[Callable], limit: int, stride: int, get_id: Callable) -> List[Question]:
     questions = []
@@ -206,7 +212,7 @@ def generate_analytics_questions(metrics: List[AnalyticsMetric], get_id: Callabl
         QuestionBuilder().id(get_id()).prompt('What is the average bounce rate?').ground_truth(f"{avg_bounce_rate:.2f}").type('aggregation').dataset('analytics').answer_type('number').normalize({"decimal_places": 2}).build(),
     ])
 
-    for threshold in QUESTION_THRESHOLDS['analytics']['views']:
+    for threshold in cast(Dict[str, Any], QUESTION_THRESHOLDS)['analytics']['views']:
         count = sum(1 for m in metrics if m['views'] > threshold)
         questions.append(QuestionBuilder().id(get_id()).prompt(f"How many days had more than {threshold} views?").ground_truth(str(count)).type('aggregation').dataset('analytics').answer_type('integer').build())
 
@@ -255,7 +261,7 @@ def generate_structural_validation_questions(get_id: Callable) -> List[Question]
             .prompt("Is this data complete and valid? Answer only YES or NO.")
             .ground_truth("YES" if fixture["isValid"] else "NO")
             .type("structural-validation")
-            .dataset(fixture["dataset"])
+            .dataset(cast(str, fixture["dataset"]))
             .answer_type("boolean")
             .build()
         )
@@ -287,7 +293,8 @@ def generate_tabular_questions(employees: List[Employee], get_id: Callable) -> L
 def generate_questions() -> List[Question]:
     questions: List[Question] = []
     id_gen = create_id_generator()
-    get_id = lambda: next(id_gen)
+    def get_id() -> str:
+        return next(id_gen)
 
     datasets = {d["name"]: d["data"] for d in ACCURACY_DATASETS}
 
@@ -304,7 +311,7 @@ def generate_questions() -> List[Question]:
     questions.extend(generate_github_questions(github_data, get_id))
     questions.extend(generate_event_logs_questions(event_logs_data, get_id))
     if nested_config_data:
-        questions.extend(generate_nested_config_questions(nested_config_data, get_id))
+        questions.extend(generate_nested_config_questions(cast(NestedConfig, nested_config_data), get_id))
     questions.extend(generate_structure_questions(tabular_data, nested_data, analytics_data, github_data, event_logs_data, get_id))
     questions.extend(generate_structural_validation_questions(get_id))
 

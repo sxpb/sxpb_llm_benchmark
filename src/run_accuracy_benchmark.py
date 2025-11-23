@@ -2,7 +2,7 @@ import argparse
 from src.benchmark_datasets import ACCURACY_DATASETS
 from src.benchmark_questions import generate_questions
 from src.benchmark_evaluation import evaluate_question
-from src.benchmark_storage import save_model_results, load_model_results, has_model_results, get_all_model_results
+from src.benchmark_storage import save_model_results, has_model_results, get_all_model_results
 from src.benchmark_report import calculate_format_results, generate_accuracy_report
 from src.generate_data import generate_json, generate_yaml, generate_xml
 from src.llm_api import LlamaCppApi, OpenAiApi
@@ -12,11 +12,11 @@ def main():
     parser = argparse.ArgumentParser(description="Run retrieval accuracy benchmark.")
     parser.add_argument("--model", type=str, required=True, help="Model ID to use for the benchmark.")
     parser.add_argument("--api-key", type=str, help="API key for OpenAI API.")
-    parser.add_argument("--base-url", type=str, help="Base URL for OpenAI-compatible API.")
+    parser.add_argument("--api-url", type=str, help="Base URL for OpenAI-compatible API.")
     args = parser.parse_args()
 
     if args.api_key:
-        llm_api = OpenAiApi(model=args.model, api_key=args.api_key, base_url=args.base_url)
+        llm_api = OpenAiApi(model=args.model, api_key=args.api_key, base_url=args.api_url)
     else:
         llm_api = LlamaCppApi(model_identifier=args.model)
 

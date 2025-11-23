@@ -82,7 +82,7 @@ def normalize_boolean(text: str, options: NormalizationOptions) -> Tuple[bool, U
         return True, False
     return False, f"Not a boolean: \"{text}\""
 
-def normalize_date(text: str) -> Tuple[bool, Union[str, str]]:
+def normalize_date(text: str, options: NormalizationOptions) -> Tuple[bool, Union[str, str]]:
     cleaned = strip_wrapping_quotes(text)
     try:
         # This is a simplification. The JS version is more robust.

@@ -1,6 +1,6 @@
 import json
 from faker import Faker
-from typing import List, Dict, Any, TypedDict, Literal
+from typing import List, Dict, Any, TypedDict, Literal, cast
 
 # Seed for reproducibility
 fake = Faker()
@@ -50,7 +50,7 @@ class Repository(TypedDict):
     updatedAt: str
     pushedAt: str
 
-class EventLog(TypedDict):
+class EventLog(TypedDict, total=False):
     timestamp: str
     level: Literal['info', 'warn', 'error']
     endpoint: str
@@ -174,7 +174,7 @@ def generate_event_logs(count: int) -> Dict[str, List[EventLog]]:
     levels = ['info', 'warn', 'error']
     logs = []
     for _ in range(count):
-        level = fake.random_element(elements=levels)
+        level = cast(Literal['info', 'warn', 'error'], fake.random_element(elements=levels))
         has_error = level == 'error' or (level == 'warn' and fake.boolean(chance_of_getting_true=30))
 
         log: EventLog = {
@@ -439,7 +439,7 @@ nested_config_dataset: Dataset = {
 }
 
 
-structural_validation_datasets: List[Dataset] = [
+structural_validation_datasets: List[Dataset] = cast(List[Dataset], [
     {
         "name": dataset_names[i],
         "description": fixture["description"],
@@ -451,7 +451,7 @@ structural_validation_datasets: List[Dataset] = [
         },
     }
     for i, fixture in enumerate(generate_structural_validation_fixtures())
-]
+])
 
 
 ACCURACY_DATASETS: List[Dataset] = [
