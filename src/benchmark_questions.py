@@ -7,7 +7,7 @@ from src.benchmark_datasets import (
     Repository,
     EventLog,
     NestedConfig,
-    ACCURACY_DATASETS,
+    Dataset,
 )
 
 QuestionType = Literal[
@@ -609,13 +609,13 @@ def generate_tabular_questions(employees: List[Employee], get_id: Callable) -> L
     return questions
 
 
-def generate_questions() -> List[Question]:
+def generate_questions(accuracy_datasets: List[Dict[str, Any]]) -> List[Question]:
     questions: List[Question] = []
     id_gen = create_id_generator()
     def get_id() -> str:
         return next(id_gen)
 
-    datasets = {d["name"]: d["data"] for d in ACCURACY_DATASETS}
+    datasets = {d["name"]: d["data"] for d in accuracy_datasets}
 
     tabular_data = datasets.get("tabular", {}).get("employees", [])
     nested_data = datasets.get("nested", {}).get("orders", [])

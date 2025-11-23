@@ -370,96 +370,99 @@ dataset_names = [
     'structural-validation-missing-fields',
 ]
 
-tabular_dataset: Dataset = {
-  "name": 'tabular',
-  "description": 'Uniform employee records',
-  "data": generate_employees(100),
-  "metadata": {
-    "supportsCSV": True,
-    "structureClass": 'uniform',
-    "tabularEligibility": 100,
-  },
-}
+def get_accuracy_datasets(fullsize_ratio: float = 1.0) -> List[Dataset]:
+    """Generates the accuracy benchmark datasets, with sizes scaled by the given ratio."""
 
-nested_dataset: Dataset = {
-  "name": 'nested',
-  "description": 'E-commerce orders with nested structures',
-  "data": generate_orders(50),
-  "metadata": {
-    "supportsCSV": False,
-    "structureClass": 'nested',
-    "tabularEligibility": 33,
-  },
-}
-
-analytics_dataset: Dataset = {
-  "name": 'analytics',
-  "description": 'Time-series analytics data',
-  "data": generate_analytics_data(60),
-  "metadata": {
-    "supportsCSV": True,
-    "structureClass": 'uniform',
-    "tabularEligibility": 100,
-  },
-}
-
-github_dataset: Dataset = {
-  "name": 'github',
-  "description": 'Top 100 GitHub repositories',
-  "data": {
-    "repositories": github_repos,
-  },
-  "metadata": {
-    "supportsCSV": True,
-    "structureClass": 'uniform',
-    "tabularEligibility": 100,
-  },
-}
-
-event_logs_dataset: Dataset = {
-  "name": 'event-logs',
-  "description": 'Semi-uniform event logs',
-  "data": generate_event_logs(75),
-  "metadata": {
-    "supportsCSV": False,
-    "structureClass": 'semi-uniform',
-    "tabularEligibility": 50,
-  },
-}
-
-nested_config_dataset: Dataset = {
-  "name": 'nested-config',
-  "description": 'Deeply nested configuration',
-  "data": generate_nested_config(),
-  "metadata": {
-    "supportsCSV": False,
-    "structureClass": 'deep',
-    "tabularEligibility": 0,
-  },
-}
-
-
-structural_validation_datasets: List[Dataset] = cast(List[Dataset], [
-    {
-        "name": dataset_names[i],
-        "description": fixture["description"],
-        "data": fixture["data"],
-        "metadata": {
-            "supportsCSV": True,
-            "structureClass": 'uniform',
-            "tabularEligibility": 100,
-        },
+    tabular_dataset: Dataset = {
+      "name": 'tabular',
+      "description": 'Uniform employee records',
+      "data": generate_employees(int(100 * fullsize_ratio)),
+      "metadata": {
+        "supportsCSV": True,
+        "structureClass": 'uniform',
+        "tabularEligibility": 100,
+      },
     }
-    for i, fixture in enumerate(generate_structural_validation_fixtures())
-])
 
+    nested_dataset: Dataset = {
+      "name": 'nested',
+      "description": 'E-commerce orders with nested structures',
+      "data": generate_orders(int(50 * fullsize_ratio)),
+      "metadata": {
+        "supportsCSV": False,
+        "structureClass": 'nested',
+        "tabularEligibility": 33,
+      },
+    }
 
-ACCURACY_DATASETS: List[Dataset] = [
-  tabular_dataset,
-  nested_dataset,
-  analytics_dataset,
-  github_dataset,
-  event_logs_dataset,
-  nested_config_dataset,
-  *structural_validation_datasets,
-]
+    analytics_dataset: Dataset = {
+      "name": 'analytics',
+      "description": 'Time-series analytics data',
+      "data": generate_analytics_data(int(60 * fullsize_ratio)),
+      "metadata": {
+        "supportsCSV": True,
+        "structureClass": 'uniform',
+        "tabularEligibility": 100,
+      },
+    }
+
+    github_dataset: Dataset = {
+      "name": 'github',
+      "description": 'Top 100 GitHub repositories',
+      "data": {
+        "repositories": github_repos[:int(100 * fullsize_ratio)],
+      },
+      "metadata": {
+        "supportsCSV": True,
+        "structureClass": 'uniform',
+        "tabularEligibility": 100,
+      },
+    }
+
+    event_logs_dataset: Dataset = {
+      "name": 'event-logs',
+      "description": 'Semi-uniform event logs',
+      "data": generate_event_logs(int(75 * fullsize_ratio)),
+      "metadata": {
+        "supportsCSV": False,
+        "structureClass": 'semi-uniform',
+        "tabularEligibility": 50,
+      },
+    }
+
+    nested_config_dataset: Dataset = {
+      "name": 'nested-config',
+      "description": 'Deeply nested configuration',
+      "data": generate_nested_config(),
+      "metadata": {
+        "supportsCSV": False,
+        "structureClass": 'deep',
+        "tabularEligibility": 0,
+      },
+    }
+
+    structural_validation_datasets: List[Dataset] = cast(List[Dataset], [
+        {
+            "name": dataset_names[i],
+            "description": fixture["description"],
+            "data": fixture["data"],
+            "metadata": {
+                "supportsCSV": True,
+                "structureClass": 'uniform',
+                "tabularEligibility": 100,
+            },
+        }
+        for i, fixture in enumerate(generate_structural_validation_fixtures())
+    ])
+
+    return [
+      tabular_dataset,
+      nested_dataset,
+      analytics_dataset,
+      github_dataset,
+      event_logs_dataset,
+      nested_config_dataset,
+      *structural_validation_datasets,
+    ]
+
+ACCURACY_DATASETS: List[Dataset] = get_accuracy_datasets()

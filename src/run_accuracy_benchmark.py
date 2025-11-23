@@ -1,5 +1,5 @@
 import argparse
-from src.benchmark_datasets import ACCURACY_DATASETS
+from src.benchmark_datasets import get_accuracy_datasets
 from src.benchmark_questions import generate_questions
 from src.benchmark_evaluation import evaluate_question
 from src.benchmark_storage import save_model_results, has_model_results, get_all_model_results
@@ -13,6 +13,7 @@ def main():
     parser.add_argument("--model", type=str, required=True, help="Model ID to use for the benchmark.")
     parser.add_argument("--api-key", type=str, help="API key for OpenAI API.")
     parser.add_argument("--api-url", type=str, help="Base URL for OpenAI-compatible API.")
+    parser.add_argument("--fullsize-ratio", type=float, default=1.0, help="Ratio to scale the dataset sizes.")
     args = parser.parse_args()
 
     if args.api_key:
@@ -22,7 +23,9 @@ def main():
 
     model_id = args.model.replace("/", "_")
 
-    questions = generate_questions()
+    accuracy_datasets = get_accuracy_datasets(args.fullsize_ratio)
+
+    questions = generate_questions(accuracy_datasets)
 
     formatters = {
         "sxpb": lambda data: sxpb.dumps(data, indent=1),
@@ -37,7 +40,7 @@ def main():
         results = []
         for i, question in enumerate(questions):
             print(f"Processing question {i+1}/{len(questions)}: {question['prompt']}")
-            dataset = next((d for d in ACCURACY_DATASETS if d["name"] == question["dataset"]), None)
+            dataset = next((d for d in accuracy_datasets if d["name"] == question["dataset"]), None)
             if not dataset:
                 continue
 
