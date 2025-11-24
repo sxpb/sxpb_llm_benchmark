@@ -45,8 +45,8 @@ def main():
                 questions_by_dataset[dataset_name] = []
             questions_by_dataset[dataset_name].append(q)
 
-        total_questions = len(questions)
-        questions_processed = 0
+        total_evaluations = len(questions) * len(formatters)
+        evaluations_processed = 0
         for dataset in accuracy_datasets:
             dataset_name = dataset["name"]
             print(f"Running benchmark for dataset: {dataset_name}")
@@ -58,9 +58,13 @@ def main():
                 print(f"  Running benchmark for format: {format_name}")
                 formatted_data = formatter(dataset["data"])
                 for question in dataset_questions:
-                    questions_processed += 1
-                    print(f"    Running {questions_processed}/{total_questions}: {question['prompt']}")
+                    evaluations_processed += 1
+                    print(f"    Running {evaluations_processed}/{total_evaluations}: {question['prompt']}", end="", flush=True)
                     result = evaluate_question(question, format_name, formatted_data, llm_api)
+                    if result['correct']:
+                        print(" PASS")
+                    else:
+                        print(" FAIL")
                     results.append(result)
 
         save_model_results(model_id, results)
