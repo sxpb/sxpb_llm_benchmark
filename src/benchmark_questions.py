@@ -44,7 +44,53 @@ class Question(TypedDict):
     normalizationOptions: Optional[NormalizationOptions]
 
 
-QUESTION_THRESHOLDS = {
+class TabularThresholds(TypedDict):
+    salaryRanges: List[int]
+    experienceYears: List[int]
+    departmentSalaryThreshold: int
+    departmentExperienceThreshold: int
+
+class NestedThresholds(TypedDict):
+    highValueOrders: List[int]
+    statusValueThreshold: int
+    itemCountThreshold: int
+    totalThresholdsForItems: List[int]
+
+class AnalyticsThresholds(TypedDict):
+    views: List[int]
+    conversions: List[int]
+    viewsForFiltering: List[int]
+    conversionsForFiltering: int
+    revenueThresholds: List[int]
+    viewsThresholdForRevenue: int
+    clicksForFiltering: List[int]
+    conversionsForClickFiltering: int
+    revenueForBounceRate: List[int]
+    bounceRateThreshold: float
+
+class StarForkCombination(TypedDict):
+    stars: int
+    forks: int
+
+class StarWatcherCombination(TypedDict):
+    stars: int
+    watchers: int
+
+class GithubThresholds(TypedDict):
+    stars: List[int]
+    forks: List[int]
+    watchers: List[int]
+    starForkCombinations: List[StarForkCombination]
+    starWatcherCombinations: List[StarWatcherCombination]
+
+class QuestionThresholds(TypedDict):
+    tabular: TabularThresholds
+    nested: NestedThresholds
+    analytics: AnalyticsThresholds
+    github: GithubThresholds
+
+
+QUESTION_THRESHOLDS: QuestionThresholds = {
     "tabular": {
         "salaryRanges": [60000, 80000, 100000],
         "experienceYears": [5, 10, 15, 20],
@@ -250,46 +296,46 @@ def generate_event_logs_questions(logs: List[EventLog], get_id: Callable) -> Lis
     questions.extend(rotate_questions(logs, log_field_generators, QUESTION_LIMITS['eventLogs']['fieldRetrieval'], SAMPLE_STRIDES['EVENT_LOG_FIELD'], get_id))
 
     total_logs = len(logs)
-    avg_response_time = sum(l['responseTime'] for l in logs) / total_logs if total_logs > 0 else 0
+    avg_response_time = sum(log['responseTime'] for log in logs) / total_logs if total_logs > 0 else 0
 
     questions.extend([
         QuestionBuilder().id(get_id()).prompt('How many log entries are in the dataset?').ground_truth(str(total_logs)).type('aggregation').dataset('event-logs').answer_type('integer').build(),
         QuestionBuilder().id(get_id()).prompt('What is the average response time across all logs?').ground_truth(f"{avg_response_time:.2f}").type('aggregation').dataset('event-logs').answer_type('number').normalize({"decimal_places": 2}).build(),
     ])
 
-    levels = sorted(list(set(l['level'] for l in logs)))
+    levels = sorted(list(set(log['level'] for log in logs)))
     for level in levels:
-        count = sum(1 for l in logs if l['level'] == level)
+        count = sum(1 for log in logs if log['level'] == level)
         questions.append(QuestionBuilder().id(get_id()).prompt(f"How many log entries have level \"{level}\"?").ground_truth(str(count)).type('aggregation').dataset('event-logs').answer_type('integer').build())
 
-    endpoints = sorted(list(set(l['endpoint'] for l in logs)))
+    endpoints = sorted(list(set(log['endpoint'] for log in logs)))
     for endpoint in endpoints[:QUESTION_LIMITS['eventLogs']['aggregationEndpoints']]:
-        count = sum(1 for l in logs if l['endpoint'] == endpoint)
+        count = sum(1 for log in logs if log['endpoint'] == endpoint)
         questions.append(QuestionBuilder().id(get_id()).prompt(f"How many log entries are for endpoint \"{endpoint}\"?").ground_truth(str(count)).type('aggregation').dataset('event-logs').answer_type('integer').build())
 
-    error_count = sum(1 for l in logs if l['statusCode'] >= 400)
-    success_count = sum(1 for l in logs if 200 <= l['statusCode'] < 300)
+    error_count = sum(1 for log in logs if log['statusCode'] >= 400)
+    success_count = sum(1 for log in logs if 200 <= log['statusCode'] < 300)
 
     questions.extend([
         QuestionBuilder().id(get_id()).prompt('How many log entries have a status code indicating an error (>= 400)?').ground_truth(str(error_count)).type('aggregation').dataset('event-logs').answer_type('integer').build(),
         QuestionBuilder().id(get_id()).prompt('How many log entries have a successful status code (200-299)?').ground_truth(str(success_count)).type('aggregation').dataset('event-logs').answer_type('integer').build(),
     ])
 
-    retryable_error_count = sum(1 for l in logs if l.get('error', {}).get('retryable'))
+    retryable_error_count = sum(1 for log in logs if log.get('error', {}).get('retryable'))
     questions.append(QuestionBuilder().id(get_id()).prompt('How many log entries have a retryable error?').ground_truth(str(retryable_error_count)).type('aggregation').dataset('event-logs').answer_type('integer').build())
 
     for level in levels[:QUESTION_LIMITS['eventLogs']['filteringLevelAndStatus']]:
         if level == 'info':
             continue
-        count = sum(1 for l in logs if l['level'] == level and l['statusCode'] >= 400)
+        count = sum(1 for log in logs if log['level'] == level and log['statusCode'] >= 400)
         questions.append(QuestionBuilder().id(get_id()).prompt(f"How many log entries have level \"{level}\" and status code >= 400?").ground_truth(str(count)).type('filtering').dataset('event-logs').answer_type('integer').build())
 
     for endpoint in endpoints[:QUESTION_LIMITS['eventLogs']['filteringEndpointAndStatus']]:
-        count = sum(1 for l in logs if l['endpoint'] == endpoint and l['statusCode'] >= 500)
+        count = sum(1 for log in logs if log['endpoint'] == endpoint and log['statusCode'] >= 500)
         questions.append(QuestionBuilder().id(get_id()).prompt(f"How many log entries are for endpoint \"{endpoint}\" with status code >= 500?").ground_truth(str(count)).type('filtering').dataset('event-logs').answer_type('integer').build())
 
     for endpoint in endpoints[:QUESTION_LIMITS['eventLogs']['filteringEndpointRetryable']]:
-        count = sum(1 for l in logs if l['endpoint'] == endpoint and l.get('error', {}).get('retryable'))
+        count = sum(1 for log in logs if log['endpoint'] == endpoint and log.get('error', {}).get('retryable'))
         questions.append(QuestionBuilder().id(get_id()).prompt(f"How many log entries for endpoint \"{endpoint}\" have a retryable error?").ground_truth(str(count)).type('filtering').dataset('event-logs').answer_type('integer').build())
 
     return questions
@@ -609,7 +655,7 @@ def generate_tabular_questions(employees: List[Employee], get_id: Callable) -> L
     return questions
 
 
-def generate_questions(accuracy_datasets: List[Dict[str, Any]]) -> List[Question]:
+def generate_questions(accuracy_datasets: List[Dataset]) -> List[Question]:
     questions: List[Question] = []
     id_gen = create_id_generator()
     def get_id() -> str:

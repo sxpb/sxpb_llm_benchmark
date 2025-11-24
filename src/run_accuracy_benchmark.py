@@ -38,13 +38,15 @@ def main():
         print(f"Results for model {model_id} already exist. Skipping.")
     else:
         results = []
-        for i, question in enumerate(questions):
-            print(f"Processing question {i+1}/{len(questions)}: {question['prompt']}")
-            dataset = next((d for d in accuracy_datasets if d["name"] == question["dataset"]), None)
-            if not dataset:
-                continue
+        total_questions = len(questions)
+        for format_name, formatter in formatters.items():
+            print(f"Running benchmark for format: {format_name}")
+            for i, question in enumerate(questions):
+                print(f"  Running {i+1}/{total_questions}: {question['prompt']}")
+                dataset = next((d for d in accuracy_datasets if d["name"] == question["dataset"]), None)
+                if not dataset:
+                    continue
 
-            for format_name, formatter in formatters.items():
                 formatted_data = formatter(dataset["data"])
                 result = evaluate_question(question, format_name, formatted_data, llm_api)
                 results.append(result)
