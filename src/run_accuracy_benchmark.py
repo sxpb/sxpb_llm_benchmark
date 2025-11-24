@@ -38,18 +38,30 @@ def main():
         print(f"Results for model {model_id} already exist. Skipping.")
     else:
         results = []
-        total_questions = len(questions)
-        for format_name, formatter in formatters.items():
-            print(f"Running benchmark for format: {format_name}")
-            for i, question in enumerate(questions):
-                print(f"  Running {i+1}/{total_questions}: {question['prompt']}")
-                dataset = next((d for d in accuracy_datasets if d["name"] == question["dataset"]), None)
-                if not dataset:
-                    continue
+        questions_by_dataset = {}
+        for q in questions:
+            dataset_name = q["dataset"]
+            if dataset_name not in questions_by_dataset:
+                questions_by_dataset[dataset_name] = []
+            questions_by_dataset[dataset_name].append(q)
 
+        total_questions = len(questions)
+        questions_processed = 0
+        for dataset in accuracy_datasets:
+            dataset_name = dataset["name"]
+            print(f"Running benchmark for dataset: {dataset_name}")
+            dataset_questions = questions_by_dataset.get(dataset_name, [])
+            if not dataset_questions:
+                continue
+
+            for format_name, formatter in formatters.items():
+                print(f"  Running benchmark for format: {format_name}")
                 formatted_data = formatter(dataset["data"])
-                result = evaluate_question(question, format_name, formatted_data, llm_api)
-                results.append(result)
+                for question in dataset_questions:
+                    questions_processed += 1
+                    print(f"    Running {questions_processed}/{total_questions}: {question['prompt']}")
+                    result = evaluate_question(question, format_name, formatted_data, llm_api)
+                    results.append(result)
 
         save_model_results(model_id, results)
 
