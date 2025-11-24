@@ -32,7 +32,7 @@ pythonpath = ["."]
 
 [tool.pdm.scripts]
 benchmark = "python -m src.run_benchmark"
-accuracy-benchmark = "python -m src.run_accuracy_benchmark"
+toon-benchmark = "python -m src.run_toon_benchmark"
 check-format = "ruff check"
 check-type = "ty check"
 tidy = "ruff format"

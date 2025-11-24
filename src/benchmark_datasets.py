@@ -370,8 +370,8 @@ dataset_names = [
     'structural-validation-missing-fields',
 ]
 
-def get_accuracy_datasets(fullsize_ratio: float = 1.0) -> List[Dataset]:
-    """Generates the accuracy benchmark datasets, with sizes scaled by the given ratio."""
+def get_toon_datasets(fullsize_ratio: float = 1.0) -> List[Dataset]:
+    """Generates the toon benchmark datasets, with sizes scaled by the given ratio."""
 
     tabular_dataset: Dataset = {
       "name": 'tabular',
@@ -465,4 +465,4 @@ def get_accuracy_datasets(fullsize_ratio: float = 1.0) -> List[Dataset]:
       *structural_validation_datasets,
     ]
 
-ACCURACY_DATASETS: List[Dataset] = get_accuracy_datasets()
+TOON_DATASETS: List[Dataset] = get_toon_datasets()

@@ -1,15 +1,15 @@
 import argparse
-from src.benchmark_datasets import get_accuracy_datasets
+from src.benchmark_datasets import get_toon_datasets
 from src.benchmark_questions import generate_questions
 from src.benchmark_evaluation import evaluate_question
 from src.benchmark_storage import save_model_results, has_model_results, get_all_model_results
-from src.benchmark_report import calculate_format_results, generate_accuracy_report
+from src.benchmark_report import calculate_format_results, generate_toon_report
 from src.generate_data import generate_json, generate_yaml, generate_xml
 from src.llm_api import LlamaCppApi, OpenAiApi
 import sxpb
 
 def main():
-    parser = argparse.ArgumentParser(description="Run retrieval accuracy benchmark.")
+    parser = argparse.ArgumentParser(description="Run retrieval toon benchmark.")
     parser.add_argument("--model", type=str, required=True, help="Model ID to use for the benchmark.")
     parser.add_argument("--api-key", type=str, help="API key for OpenAI API.")
     parser.add_argument("--api-url", type=str, help="Base URL for OpenAI-compatible API.")
@@ -23,9 +23,9 @@ def main():
 
     model_id = args.model.replace("/", "_")
 
-    accuracy_datasets = get_accuracy_datasets(args.fullsize_ratio)
+    toon_datasets = get_toon_datasets(args.fullsize_ratio)
 
-    questions = generate_questions(accuracy_datasets)
+    questions = generate_questions(toon_datasets)
 
     formatters = {
         "sxpb": lambda data: sxpb.dumps(data, indent=1),
@@ -47,7 +47,7 @@ def main():
 
         total_evaluations = len(questions) * len(formatters)
         evaluations_processed = 0
-        for dataset in accuracy_datasets:
+        for dataset in toon_datasets:
             dataset_name = dataset["name"]
             print(f"Running benchmark for dataset: {dataset_name}")
             dataset_questions = questions_by_dataset.get(dataset_name, [])
@@ -73,9 +73,9 @@ def main():
     flat_results = [item for sublist in all_results.values() for item in sublist]
 
     format_results = calculate_format_results(flat_results)
-    report = generate_accuracy_report(flat_results, format_results)
+    report = generate_toon_report(flat_results, format_results)
 
-    with open("results/retrieval-accuracy.md", "w") as f:
+    with open("results/toon-benchmark.md", "w") as f:
         f.write(report)
 
 if __name__ == "__main__":

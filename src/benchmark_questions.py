@@ -655,13 +655,13 @@ def generate_tabular_questions(employees: List[Employee], get_id: Callable) -> L
     return questions
 
 
-def generate_questions(accuracy_datasets: List[Dataset]) -> List[Question]:
+def generate_questions(toon_datasets: List[Dataset]) -> List[Question]:
     questions: List[Question] = []
     id_gen = create_id_generator()
     def get_id() -> str:
         return next(id_gen)
 
-    datasets = {d["name"]: d["data"] for d in accuracy_datasets}
+    datasets = {d["name"]: d["data"] for d in toon_datasets}
 
     tabular_data = datasets.get("tabular", {}).get("employees", [])
     nested_data = datasets.get("nested", {}).get("orders", [])

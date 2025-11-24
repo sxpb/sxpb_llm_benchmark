@@ -2,7 +2,7 @@ import json
 import os
 from typing import List, Dict, Any
 
-RESULTS_DIR = "results/accuracy/models"
+RESULTS_DIR = "results/toon/models"
 
 def load_model_results(model_id: str) -> List[Dict[str, Any]]:
     filepath = os.path.join(RESULTS_DIR, f"{model_id}.json")

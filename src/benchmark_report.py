@@ -27,12 +27,12 @@ def calculate_format_results(results: List[Dict[str, Any]]) -> List[Dict[str, An
     return sorted(format_results, key=lambda x: x['accuracy'], reverse=True)
 
 
-def generate_accuracy_report(
+def generate_toon_report(
     results: List[Dict[str, Any]],
     format_results: List[Dict[str, Any]],
 ) -> str:
     # This is a simplified version of the report generation.
-    report = "# Accuracy Report\n\n"
+    report = "# Toon Benchmark Report\n\n"
     for fr in format_results:
         report += f"## {fr['format']}\n"
         report += f"- Accuracy: {fr['accuracy']:.2%}\n"
