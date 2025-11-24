@@ -61,7 +61,7 @@ def main():
                     evaluations_processed += 1
                     print(f"    Running {evaluations_processed}/{total_evaluations}: {question['prompt']}", end="", flush=True)
                     result = evaluate_question(question, format_name, formatted_data, llm_api)
-                    if result['correct']:
+                    if result['isCorrect']:
                         print(f" -- {question['id']} PASS")
                     else:
                         print(f" -- {question['id']} FAIL")
