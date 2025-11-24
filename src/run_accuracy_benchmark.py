@@ -62,9 +62,9 @@ def main():
                     print(f"    Running {evaluations_processed}/{total_evaluations}: {question['prompt']}", end="", flush=True)
                     result = evaluate_question(question, format_name, formatted_data, llm_api)
                     if result['correct']:
-                        print(" PASS")
+                        print(f" -- {question['id']} PASS")
                     else:
-                        print(" FAIL")
+                        print(f" -- {question['id']} FAIL")
                     results.append(result)
 
         save_model_results(model_id, results)
