@@ -73,10 +73,14 @@ class LlamaCppApi(LlmApi):
         if self.llm is None:
             raise Exception("LLM not initialized.")
 
+        max_tokens = self.completion_token_limit
+        if max_tokens == 0:
+            max_tokens = None
+
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
         output: Any = self.llm.create_chat_completion(
             cast(List[ChatCompletionRequestMessage], messages),
-            max_tokens=self.completion_token_limit,
+            max_tokens=max_tokens,
         )
         assert isinstance(output, dict)
         content = output["choices"][0]["message"]["content"]
@@ -102,11 +106,14 @@ class OpenAiApi(LlmApi):
         self.completion_token_limit = completion_token_limit
 
     def call_llm(self, prompt: str) -> Dict[str, Any]:
+        max_tokens = self.completion_token_limit
+        if max_tokens == 0:
+            max_tokens = None
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=self.completion_token_limit,
+            max_tokens=max_tokens,
         )
         content = response.choices[0].message.content
         llm_answer = content.strip() if content else ""
