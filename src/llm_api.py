@@ -18,8 +18,11 @@ class LlmApi(ABC):
 
 
 class LlamaCppApi(LlmApi):
-    def __init__(self, model_identifier: str):
+    def __init__(
+        self, model_identifier: str, completion_token_limit: Optional[int] = 4000
+    ):
         self.llm: Optional[Llama] = None
+        self.completion_token_limit = completion_token_limit
         self._initialize_llm(model_identifier)
 
     def _initialize_llm(self, model_identifier: str) -> None:
@@ -73,7 +76,7 @@ class LlamaCppApi(LlmApi):
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
         output: Any = self.llm.create_chat_completion(
             cast(List[ChatCompletionRequestMessage], messages),
-            max_tokens=4000,
+            max_tokens=self.completion_token_limit,
         )
         assert isinstance(output, dict)
         content = output["choices"][0]["message"]["content"]
@@ -85,18 +88,25 @@ class LlamaCppApi(LlmApi):
 
 
 class OpenAiApi(LlmApi):
-    def __init__(self, model: str, api_key: str, base_url: Optional[str] = None):
+    def __init__(
+        self,
+        model: str,
+        api_key: str,
+        base_url: Optional[str] = None,
+        completion_token_limit: Optional[int] = 4000,
+    ):
         if not api_key:
             raise ValueError("API key is required for OpenAI API.")
         self.model = model
         self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
+        self.completion_token_limit = completion_token_limit
 
     def call_llm(self, prompt: str) -> Dict[str, Any]:
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=4000,
+            max_tokens=self.completion_token_limit,
         )
         content = response.choices[0].message.content
         llm_answer = content.strip() if content else ""

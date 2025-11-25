@@ -28,14 +28,26 @@ def main():
         default=1.0,
         help="Ratio to scale the dataset sizes.",
     )
+    parser.add_argument(
+        "--completion_token_limit",
+        type=int,
+        default=4000,
+        help="The maximum number of tokens to generate for each completion.",
+    )
     args = parser.parse_args()
 
     if args.api_key:
         llm_api = OpenAiApi(
-            model=args.model, api_key=args.api_key, base_url=args.api_url
+            model=args.model,
+            api_key=args.api_key,
+            base_url=args.api_url,
+            completion_token_limit=args.completion_token_limit,
         )
     else:
-        llm_api = LlamaCppApi(model_identifier=args.model)
+        llm_api = LlamaCppApi(
+            model_identifier=args.model,
+            completion_token_limit=args.completion_token_limit,
+        )
 
     model_id = args.model.replace("/", "_")
 

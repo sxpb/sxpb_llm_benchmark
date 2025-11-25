@@ -185,6 +185,12 @@ def main() -> None:
         default=None,
         help="If specified, saves the benchmark results and context logs to this directory.",
     )
+    parser.add_argument(
+        "--completion_token_limit",
+        type=int,
+        default=4000,
+        help="The maximum number of tokens to generate for each completion.",
+    )
     args = parser.parse_args()
     selected_benchmark: str = args.benchmark_name
 
@@ -200,9 +206,16 @@ def main() -> None:
     if args.api_url:
         if not args.api_key:
             raise ValueError("--api-key is required when using --api-url.")
-        llm = OpenAiApi(model=args.model, api_key=args.api_key, base_url=args.api_url)
+        llm = OpenAiApi(
+            model=args.model,
+            api_key=args.api_key,
+            base_url=args.api_url,
+            completion_token_limit=args.completion_token_limit,
+        )
     else:
-        llm = LlamaCppApi(args.model)
+        llm = LlamaCppApi(
+            args.model, completion_token_limit=args.completion_token_limit
+        )
 
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
     data_dir: str = os.path.join(script_dir, "../data")
