@@ -5,18 +5,19 @@ from src.llm_api import LlmApi
 import time
 
 PRIMERS: Dict[str, str] = {
-    'sxpb': 'SXPB: S-expression based format.',
-    'json': 'JSON: Strict JSON objects/arrays with repeated keys per row.',
-    'yaml': 'YAML: Indentation-based key/value and lists (- items).',
-    'xml': 'XML: Tag-based tree structure with nested elements.',
+    "sxpb": "SXPB: S-expression based format.",
+    "json": "JSON: Strict JSON objects/arrays with repeated keys per row.",
+    "yaml": "YAML: Indentation-based key/value and lists (- items).",
+    "xml": "XML: Tag-based tree structure with nested elements.",
 }
 
 FENCE: Dict[str, str] = {
-    'sxpb': 'sxpb',
-    'json': 'json',
-    'yaml': 'yaml',
-    'xml': 'xml',
+    "sxpb": "sxpb",
+    "json": "json",
+    "yaml": "yaml",
+    "xml": "xml",
 }
+
 
 def evaluate_question(
     question: Question,
@@ -36,7 +37,7 @@ Given the following data in {format_name} format:
 {formatted_data}
 ```
 
-Question: {question['prompt']}
+Question: {question["prompt"]}
 
 Answer format requirements:
 - Provide only the value itself, no explanation
@@ -70,5 +71,5 @@ Answer:
         "actual": actual,
         "isCorrect": is_correct,
         "latencyMs": latency_ms,
-        "prompt_tokens": response.get("prompt_tokens", 0)
+        "prompt_tokens": response.get("prompt_tokens", 0),
     }
