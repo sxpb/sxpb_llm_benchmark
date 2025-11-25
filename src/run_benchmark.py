@@ -186,12 +186,14 @@ def main() -> None:
         help="If specified, saves the benchmark results and context logs to this directory.",
     )
     parser.add_argument(
+        "--completion-token-limit",
         "--completion_token_limit",
         type=int,
         default=4000,
         help="The maximum number of tokens to generate for each completion. Set to 0 for no limit.",
     )
     parser.add_argument(
+        "--ollama-compatibility-on",
         "--ollama_compatibility_on",
         action="store_true",
         help="Enable Ollama compatibility mode. This will cause a completion_token_limit of 0 to be sent as -1.",
