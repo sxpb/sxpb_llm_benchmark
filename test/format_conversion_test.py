@@ -25,7 +25,7 @@ def test_format_conversions():
             sxpb_content = f.read()
 
         # Parse the sxpb data to a Python object
-        parsed_data = sxpb.loads(sxpb_content)
+        parsed_data = sxpb.loads(sxpb_content, precise=True)
         assert parsed_data is not None
 
         # Define the test data directory

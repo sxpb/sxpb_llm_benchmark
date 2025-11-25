@@ -245,7 +245,7 @@ def main() -> None:
             continue
         with open(qa_sxpb_file_path, "r", encoding="utf-8") as f:
             raw_qa_sxpb_content: str = f.read()
-        qa_data = sxpb.loads(raw_qa_sxpb_content, builtin_only=True)
+        qa_data = sxpb.loads(raw_qa_sxpb_content, precise=False)
         if qa_data is None:
             print(f"Error: Could not parse QA data from {qa_sxpb_file_path}")
             continue
@@ -259,7 +259,7 @@ def main() -> None:
             raw_sxpb_content: str = f.read()
 
         try:
-            native_data = sxpb.loads(raw_sxpb_content)
+            native_data = sxpb.loads(raw_sxpb_content, precise=True)
         except Exception as e:
             print(f"Error parsing {sxpb_file_path}: {e}")
             continue
