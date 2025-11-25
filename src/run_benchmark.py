@@ -245,7 +245,7 @@ def main() -> None:
             continue
         with open(qa_sxpb_file_path, "r", encoding="utf-8") as f:
             raw_qa_sxpb_content: str = f.read()
-        qa_data = sxpb.loads(raw_qa_sxpb_content, precise=False)
+        qa_data = sxpb.loads(raw_qa_sxpb_content)
         if qa_data is None:
             print(f"Error: Could not parse QA data from {qa_sxpb_file_path}")
             continue
