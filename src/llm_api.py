@@ -19,10 +19,18 @@ class LlmApi(ABC):
 
 class LlamaCppApi(LlmApi):
     def __init__(
-        self, model_identifier: str, completion_token_limit: Optional[int] = 4000
+        self,
+        model_identifier: str,
+        completion_token_limit: Optional[int] = 4000,
+        ollama_compatibility_on: bool = False,
     ):
         self.llm: Optional[Llama] = None
-        self.completion_token_limit = completion_token_limit
+        self.max_tokens = completion_token_limit
+        if self.max_tokens == 0:
+            if ollama_compatibility_on:
+                self.max_tokens = -1
+            else:
+                self.max_tokens = None
         self._initialize_llm(model_identifier)
 
     def _initialize_llm(self, model_identifier: str) -> None:
@@ -73,14 +81,10 @@ class LlamaCppApi(LlmApi):
         if self.llm is None:
             raise Exception("LLM not initialized.")
 
-        max_tokens = self.completion_token_limit
-        if max_tokens == 0:
-            max_tokens = None
-
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
         output: Any = self.llm.create_chat_completion(
             cast(List[ChatCompletionRequestMessage], messages),
-            max_tokens=max_tokens,
+            max_tokens=self.max_tokens,
         )
         assert isinstance(output, dict)
         content = output["choices"][0]["message"]["content"]
@@ -98,22 +102,25 @@ class OpenAiApi(LlmApi):
         api_key: str,
         base_url: Optional[str] = None,
         completion_token_limit: Optional[int] = 4000,
+        ollama_compatibility_on: bool = False,
     ):
         if not api_key:
             raise ValueError("API key is required for OpenAI API.")
         self.model = model
         self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
-        self.completion_token_limit = completion_token_limit
+        self.max_tokens = completion_token_limit
+        if self.max_tokens == 0:
+            if ollama_compatibility_on:
+                self.max_tokens = -1
+            else:
+                self.max_tokens = None
 
     def call_llm(self, prompt: str) -> Dict[str, Any]:
-        max_tokens = self.completion_token_limit
-        if max_tokens == 0:
-            max_tokens = None
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
         response = self.client.chat.completions.create(
             model=self.model,
             messages=messages,
-            max_tokens=max_tokens,
+            max_tokens=self.max_tokens,
         )
         content = response.choices[0].message.content
         llm_answer = content.strip() if content else ""

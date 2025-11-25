@@ -189,7 +189,12 @@ def main() -> None:
         "--completion_token_limit",
         type=int,
         default=4000,
-        help="The maximum number of tokens to generate for each completion.",
+        help="The maximum number of tokens to generate for each completion. Set to 0 for no limit.",
+    )
+    parser.add_argument(
+        "--ollama_compatibility_on",
+        action="store_true",
+        help="Enable Ollama compatibility mode. This will cause a completion_token_limit of 0 to be sent as -1.",
     )
     args = parser.parse_args()
     selected_benchmark: str = args.benchmark_name
@@ -211,10 +216,13 @@ def main() -> None:
             api_key=args.api_key,
             base_url=args.api_url,
             completion_token_limit=args.completion_token_limit,
+            ollama_compatibility_on=args.ollama_compatibility_on,
         )
     else:
         llm = LlamaCppApi(
-            args.model, completion_token_limit=args.completion_token_limit
+            args.model,
+            completion_token_limit=args.completion_token_limit,
+            ollama_compatibility_on=args.ollama_compatibility_on,
         )
 
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
