@@ -162,12 +162,14 @@ def main() -> None:
     )
     parser.add_argument(
         "--api-key",
+        "--api_key",
         type=str,
         default=None,
         help="API key for OpenAI or OpenRouter. Required if --api-url is set.",
     )
     parser.add_argument(
         "--api-url",
+        "--api_url",
         type=str,
         default=None,
         help="If specified, runs the benchmark against an OpenAI-compatible API at this URL. Otherwise, runs locally using llama-cpp-python.",
@@ -181,6 +183,7 @@ def main() -> None:
     )
     parser.add_argument(
         "--log-dir",
+        "--log_dir",
         type=str,
         default=None,
         help="If specified, saves the benchmark results and context logs to this directory.",

@@ -18,12 +18,15 @@ def main():
     parser.add_argument(
         "--model", type=str, required=True, help="Model ID to use for the benchmark."
     )
-    parser.add_argument("--api-key", type=str, help="API key for OpenAI API.")
     parser.add_argument(
-        "--api-url", type=str, help="Base URL for OpenAI-compatible API."
+        "--api-key", "--api_key", type=str, help="API key for OpenAI API."
+    )
+    parser.add_argument(
+        "--api-url", "--api_url", type=str, help="Base URL for OpenAI-compatible API."
     )
     parser.add_argument(
         "--fullsize-ratio",
+        "--fullsize_ratio",
         type=float,
         default=1.0,
         help="Ratio to scale the dataset sizes.",
