@@ -5,7 +5,7 @@ from src.llm_api import LlmApi
 import time
 
 PRIMERS: Dict[str, str] = {
-    "sxpb": "SXPB: S-expression based format.",
+    "sxpb": "SxPB: S-expression based format.",
     "json": "JSON: Strict JSON objects/arrays with repeated keys per row.",
     "yaml": "YAML: Indentation-based key/value and lists (- items).",
     "xml": "XML: Tag-based tree structure with nested elements.",

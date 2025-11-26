@@ -226,7 +226,7 @@ def _build_txtpb_string_recursive(data: Any, indent_level: int, mode: str) -> st
 
 def generate_sxpb(data: Any, mode: str = "pretty") -> str:
     """
-    Generates an SXPB representation from a list of Python objects.
+    Generates an SxPB representation from a list of Python objects.
     - 'pretty': Standard human-readable format.
     - 'oneline': A single line with minimal spacing.
     - 'compact': A single line with no extra spaces.
@@ -237,7 +237,7 @@ def generate_sxpb(data: Any, mode: str = "pretty") -> str:
         return sxpb.dumps(data, indent=0)
     elif mode == "compact":
         return sxpb.dumps(data, indent=-1)
-    raise ValueError(f"Unknown SXPB generation mode: {mode}")
+    raise ValueError(f"Unknown SxPB generation mode: {mode}")
 
 
 if __name__ == "__main__":

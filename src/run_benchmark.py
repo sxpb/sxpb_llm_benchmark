@@ -57,13 +57,20 @@ def call_llm(prompt: str, log_context_file: Optional[str] = None) -> Dict[str, A
     return llm_response
 
 
+def format_for_display(format_name: str) -> str:
+    """Formats the given format name for display."""
+    if "sxpb" in format_name:
+        return "SxPB"
+    return format_name.upper()
+
+
 def run_benchmark(
     data_format: str,
     qa_data: List[Dict[str, Any]],
     raw_file_content: str,
     log_context_file: Optional[str] = None,
 ) -> Dict[str, Any]:
-    print(f"\n--- Running benchmark for {data_format.upper()} ---")
+    print(f"\n--- Running benchmark for {format_for_display(data_format)} ---")
 
     if not qa_data:
         print("No QA data found, skipping benchmark.")
@@ -144,6 +151,16 @@ def run_benchmark(
     }
 
 
+def _check_format(value: str) -> str:
+    """Checks if the given format is supported, case-insensitively."""
+    lower_value = value.lower()
+    if lower_value in SUPPORTED_FORMATS:
+        return lower_value
+    raise argparse.ArgumentTypeError(
+        f"invalid choice: '{value}' (choose from {', '.join(SUPPORTED_FORMATS)})"
+    )
+
+
 def main() -> None:
     global llm
     parser = argparse.ArgumentParser(description="Run a benchmark for a given dataset.")
@@ -176,9 +193,8 @@ def main() -> None:
     )
     parser.add_argument(
         "--format",
-        type=str,
+        type=_check_format,
         default=None,
-        choices=SUPPORTED_FORMATS,
         help="If specified, runs the benchmark only for this data format.",
     )
     parser.add_argument(
@@ -356,7 +372,7 @@ def main() -> None:
             accuracy: float = result_data["accuracy"]
             avg_time: float = result_data["average_time"]
             print(
-                f"{format_name.upper():<{max_format_len}}: Accuracy: {accuracy:.2f}%, Avg Time: {avg_time:.4f}s"
+                f"{format_for_display(format_name):<{max_format_len}}: Accuracy: {accuracy:.2f}%, Avg Time: {avg_time:.4f}s"
             )
 
         if args.log_dir:
@@ -378,7 +394,7 @@ def main() -> None:
             prompt_bytes = data["total_prompt_bytes"]
             overall_accuracy = (correct / total) * 100 if total > 0 else 0
             print(
-                f"{fmt.upper():<{max_format_len}}: "
+                f"{format_for_display(fmt):<{max_format_len}}: "
                 f"Accuracy: {overall_accuracy:.2f}% ({correct}/{total}) | "
                 f"Input Tokens: {prompt_tokens} | Input Bytes: {prompt_bytes}"
             )

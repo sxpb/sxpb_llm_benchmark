@@ -32,7 +32,7 @@ def test_format_conversions():
         test_data_dir = os.path.join(os.path.dirname(__file__), "data", benchmark_name)
         plain_data = to_plain_types(parsed_data)
 
-        # 1. Test SXPB formatting
+        # 1. Test SxPB formatting
         sxpb_oneline_file_path = os.path.join(test_data_dir, "data.oneline.sxpb")
         with open(sxpb_oneline_file_path, "r", encoding="utf-8") as f:
             expected_sxpb_oneline_content = f.read()
