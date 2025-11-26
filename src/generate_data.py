@@ -245,12 +245,9 @@ def generate_toon(data: Dict[str, Any], mode: str = "pretty") -> str:
     """
     Generates a TOON representation from a dictionary of Python objects.
     - 'pretty': Standard human-readable format.
-    - 'compact': No extra spaces.
     """
     if mode == "pretty":
         return encode(data)
-    elif mode == "compact":
-        return encode(data, options={"indent": 0})
     raise ValueError(f"Unknown TOON generation mode: {mode}")
 
 

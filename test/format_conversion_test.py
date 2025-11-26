@@ -2,7 +2,12 @@ import os
 import sxpb
 import yaml
 import json
-from src.generate_data import generate_jsonl, generate_txtpb, generate_xml, generate_toon
+from src.generate_data import (
+    generate_jsonl,
+    generate_txtpb,
+    generate_xml,
+    generate_toon,
+)
 from sxpb.jsonutil import to_plain_types
 
 
