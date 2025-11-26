@@ -10,6 +10,7 @@ dependencies = [
     "psutil>=5.9.8",
     "openai>=1.0.0",
     "sxpb @ git+https://github.com/sxproto/sxpb-py@3988d18e54179409fa743a1dcce5ab00969f6745",
+    "toon-format @ git+https://github.com/toon-format/toon-python.git",
 ]
 requires-python = ">=3.9"
 

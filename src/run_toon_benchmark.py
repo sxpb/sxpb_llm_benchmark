@@ -8,7 +8,7 @@ from src.benchmark_storage import (
     get_all_model_results,
 )
 from src.benchmark_report import calculate_format_results, generate_toon_report
-from src.generate_data import generate_json, generate_yaml, generate_xml
+from src.generate_data import generate_json, generate_yaml, generate_xml, generate_toon
 from src.llm_api import LlamaCppApi, OpenAiApi
 import sxpb
 
@@ -71,6 +71,7 @@ def main():
         "sxpb": lambda data: sxpb.dumps(data, indent=1),
         "json": lambda data: generate_json(data, mode="pretty"),
         "yaml": lambda data: generate_yaml(data),
+        "toon": lambda data: generate_toon(data, mode="pretty"),
         "xml": lambda data: generate_xml(
             list(data.values())[0], root_element_name=list(data.keys())[0]
         ),

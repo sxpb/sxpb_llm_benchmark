@@ -2,7 +2,7 @@ import os
 import sxpb
 import yaml
 import json
-from src.generate_data import generate_jsonl, generate_txtpb, generate_xml
+from src.generate_data import generate_jsonl, generate_txtpb, generate_xml, generate_toon
 from sxpb.jsonutil import to_plain_types
 
 
@@ -120,3 +120,10 @@ def test_format_conversions():
             expected_jsonl_content = f.read()
         generated_jsonl_content = generate_jsonl(data_list)
         assert generated_jsonl_content == expected_jsonl_content
+
+        # 7. Test TOON conversion
+        toon_file_path = os.path.join(test_data_dir, "data.toon")
+        with open(toon_file_path, "r", encoding="utf-8") as f:
+            expected_toon_content = f.read()
+        generated_toon_content = generate_toon(plain_data)
+        assert generated_toon_content == expected_toon_content

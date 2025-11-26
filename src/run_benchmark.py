@@ -11,6 +11,7 @@ from src.generate_data import (
     generate_xml,
     generate_yaml,
     generate_sxpb,
+    generate_toon,
 )
 from typing import Any, Dict, List, Optional
 from src.llm_api import LlmApi, LlamaCppApi, OpenAiApi
@@ -31,6 +32,8 @@ SUPPORTED_FORMATS = sorted(
         "txtpb",
         "txtpb.compact",
         "txtpb.oneline",
+        "toon",
+        "toon.compact",
         "xml",
         "xml.compact",
         "yaml",
@@ -338,6 +341,8 @@ def main() -> None:
             "txtpb.oneline": generate_txtpb(
                 data_list, root_element_name, mode="oneline"
             ),
+            "toon": generate_toon(plain_data_dict),
+            "toon.compact": generate_toon(plain_data_dict, mode="compact"),
             "yaml": generate_yaml(plain_data_dict),
             "xml": generate_xml(data_list, root_element_name),
             "xml.compact": generate_xml(data_list, root_element_name, mode="compact"),

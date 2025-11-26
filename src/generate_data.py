@@ -5,6 +5,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import OrderedDict
 import json
+from toon_format import encode
 from typing import Any, Dict, List
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -238,6 +239,19 @@ def generate_sxpb(data: Any, mode: str = "pretty") -> str:
     elif mode == "compact":
         return sxpb.dumps(data, indent=-1)
     raise ValueError(f"Unknown SxPB generation mode: {mode}")
+
+
+def generate_toon(data: Dict[str, Any], mode: str = "pretty") -> str:
+    """
+    Generates a TOON representation from a dictionary of Python objects.
+    - 'pretty': Standard human-readable format.
+    - 'compact': No extra spaces.
+    """
+    if mode == "pretty":
+        return encode(data, options={"indent": 2})
+    elif mode == "compact":
+        return encode(data)
+    raise ValueError(f"Unknown TOON generation mode: {mode}")
 
 
 if __name__ == "__main__":
