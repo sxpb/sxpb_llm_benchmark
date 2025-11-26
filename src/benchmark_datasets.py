@@ -489,7 +489,7 @@ def get_toon_datasets(fullsize_ratio: float = 1.0) -> List[Dataset]:
     nested_config_dataset: Dataset = {
         "name": "nested-config",
         "description": "Deeply nested configuration",
-        "data": generate_nested_config(),
+        "data": cast(Dict[str, Any], generate_nested_config()),
         "metadata": {
             "supportsCSV": False,
             "structureClass": "deep",
