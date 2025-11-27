@@ -46,7 +46,12 @@ def call_llm(prompt: str, log_context_file: Optional[str] = None) -> Dict[str, A
     if llm is None:
         raise Exception("LLM not initialized. Please call initialize_llm() first.")
 
-    llm_response = llm.call_llm(prompt)
+    try:
+        llm_response = llm.call_llm(prompt)
+    except Exception as e:
+        print(f"Error calling LLM: {e}")
+        llm_response = {"answer": f"ERROR_LLM_TIMEOUT: {e}", "prompt_tokens": 0}
+
     llm_answer = llm_response["answer"]
 
     if log_context_file:
