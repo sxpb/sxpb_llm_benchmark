@@ -5,12 +5,14 @@ from llm_api import OpenAiApi
 import re
 import sys
 
+
 def parse_sxpb_block(text):
     """Parses the last ```sxpb markdown code block from the given text."""
     sxpb_blocks = re.findall(r"```sxpb\n(.*?)\n```", text, re.DOTALL)
     if not sxpb_blocks:
         return None
     return sxpb_blocks[-1]
+
 
 def main():
     parser = argparse.ArgumentParser(description="Interactive SxPB parser.")
@@ -39,7 +41,7 @@ def main():
             print("Successfully parsed SxPB data:", file=sys.stderr)
             print(parsed_data)
             break
-        except sxpb.DecodeError as e:
+        except Exception as e:
             prompt = f"Syntax error in SxPB block: {e}. Please fix it."
 
 

@@ -59,7 +59,7 @@ def call_llm(prompt: str, log_context_file: Optional[str] = None) -> Dict[str, A
             f.write("--- Input ---\n")
             f.write(prompt)
             f.write("\n\n--- Output ---\n")
-            f.write(llm_answer)
+            f.write(str(llm_answer))
             f.write("\n\n")
 
     return llm_response
