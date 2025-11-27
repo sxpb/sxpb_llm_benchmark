@@ -1,5 +1,5 @@
 from typing import Dict, Any, cast, Optional
-from src.benchmark_questions import Question
+from src.bench.toon.questions import Question
 from src.answer_normalization import compare_answers
 from src.llm_api import LlmApi
 import time
@@ -123,7 +123,7 @@ Answer:
 
     latency_ms = (time.time() - start_time) * 1000
 
-    raw_actual = response["answer"].strip()
+    raw_actual = str(response["answer"]).strip()
     actual = raw_actual
 
     if use_json_output:

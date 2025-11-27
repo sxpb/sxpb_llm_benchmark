@@ -1,8 +1,8 @@
 import unittest
-from typing import Dict, Any
-from src.benchmark_datasets import get_toon_datasets
-from src.benchmark_questions import generate_questions
-from src.benchmark_evaluation import evaluate_question, clean_llm_answer
+from typing import Dict, Any, cast
+from src.bench.toon.datasets import get_toon_datasets
+from src.bench.toon.questions import generate_questions, Question
+from src.bench.toon.evaluation import evaluate_question, clean_llm_answer
 from src.llm_api import LlmApi
 
 class MockLlmApi(LlmApi):
@@ -46,42 +46,42 @@ class TestToonBenchmark(unittest.TestCase):
         self.assertEqual(clean_llm_answer("  42  "), "42")
 
     def test_evaluate_question_correct(self):
-        question = {
+        question = cast(Question, {
             "id": "q1",
             "prompt": "What is 2+2?",
             "groundTruth": "4",
             "type": "retrieval",
             "dataset": "test",
             "answerType": "integer"
-        }
+        })
         llm_api = MockLlmApi("Final Answer: 4")
         result = evaluate_question(question, "json", "{}", llm_api)
         self.assertTrue(result["isCorrect"])
         self.assertEqual(result["actual"], "4")
 
     def test_evaluate_question_incorrect(self):
-        question = {
+        question = cast(Question, {
             "id": "q1",
             "prompt": "What is 2+2?",
             "groundTruth": "4",
             "type": "retrieval",
             "dataset": "test",
             "answerType": "integer"
-        }
+        })
         llm_api = MockLlmApi("Final Answer: 5")
         result = evaluate_question(question, "json", "{}", llm_api)
         self.assertFalse(result["isCorrect"])
         self.assertEqual(result["actual"], "5")
 
     def test_evaluate_question_json_output(self):
-        question = {
+        question = cast(Question, {
             "id": "q1",
             "prompt": "What is 2+2?",
             "groundTruth": "4",
             "type": "retrieval",
             "dataset": "test",
             "answerType": "integer"
-        }
+        })
         # LLM returns JSON as requested
         llm_api = MockLlmApi('```json\n{"answer": "4"}\n```')
         result = evaluate_question(question, "json", "{}", llm_api, use_json_output=True)
@@ -89,14 +89,14 @@ class TestToonBenchmark(unittest.TestCase):
         self.assertEqual(result["actual"], "4")
 
     def test_evaluate_question_json_output_fallback(self):
-        question = {
+        question = cast(Question, {
             "id": "q1",
             "prompt": "What is 2+2?",
             "groundTruth": "4",
             "type": "retrieval",
             "dataset": "test",
             "answerType": "integer"
-        }
+        })
         # LLM fails to return JSON, but returns correct answer text
         llm_api = MockLlmApi('Final Answer: 4')
         result = evaluate_question(question, "json", "{}", llm_api, use_json_output=True)

@@ -33,7 +33,7 @@ pythonpath = ["."]
 
 [tool.pdm.scripts]
 benchmark = "python -m src.run_benchmark"
-toon-benchmark = "python -m src.run_toon_benchmark"
+toon-benchmark = "python -m src.bench.toon.run_benchmark"
 q2a = "python -m src.q2a"
 check-format = "ruff check"
 check-type = "ty check"

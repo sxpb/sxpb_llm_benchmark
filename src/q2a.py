@@ -23,7 +23,7 @@ def main():
     prompt = sys.stdin.read()
 
     while True:
-        print(f"Sending prompt to LLM...", file=sys.stderr)
+        print("Sending prompt to LLM...", file=sys.stderr)
         response = api.call_llm(prompt)
         llm_answer = response["answer"]
         print(f"LLM response: {llm_answer}", file=sys.stderr)

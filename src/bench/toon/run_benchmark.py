@@ -1,13 +1,13 @@
 import argparse
-from src.benchmark_datasets import get_toon_datasets
-from src.benchmark_questions import generate_questions
-from src.benchmark_evaluation import evaluate_question
-from src.benchmark_storage import (
+from src.bench.toon.datasets import get_toon_datasets
+from src.bench.toon.questions import generate_questions
+from src.bench.toon.evaluation import evaluate_question
+from src.bench.toon.storage import (
     save_model_results,
     has_model_results,
     get_all_model_results,
 )
-from src.benchmark_report import calculate_format_results, generate_toon_report
+from src.bench.toon.report import calculate_format_results, generate_toon_report
 from src.generate_data import generate_json, generate_yaml, generate_xml, generate_toon
 from src.llm_api import get_llm_api
 import sxpb

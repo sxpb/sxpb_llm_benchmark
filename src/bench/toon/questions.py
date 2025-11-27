@@ -10,7 +10,7 @@ from typing import (
     cast,
 )
 from itertools import count
-from src.benchmark_datasets import (
+from src.bench.toon.datasets import (
     Employee,
     Order,
     AnalyticsMetric,
