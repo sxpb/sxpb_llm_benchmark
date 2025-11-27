@@ -14,7 +14,7 @@ from src.generate_data import (
     generate_toon,
 )
 from typing import Any, Dict, List, Optional
-from src.llm_api import LlmApi, LlamaCppApi, OpenAiApi
+from src.llm_api import LlmApi, get_llm_api
 
 # Global variable to hold the LLM instance
 llm: Optional[LlmApi] = None
@@ -240,22 +240,16 @@ def main() -> None:
         with open(log_context_file, "w", encoding="utf-8") as f:
             pass
 
-    if args.api_url:
-        if not args.api_key:
-            raise ValueError("--api-key is required when using --api-url.")
-        llm = OpenAiApi(
-            model=args.model,
-            api_key=args.api_key,
-            base_url=args.api_url,
-            completion_token_limit=args.completion_token_limit,
-            ollama_compatibility_on=args.ollama_compatibility_on,
-        )
-    else:
-        llm = LlamaCppApi(
-            args.model,
-            completion_token_limit=args.completion_token_limit,
-            ollama_compatibility_on=args.ollama_compatibility_on,
-        )
+    if args.api_url and not args.api_key:
+        raise ValueError("--api-key is required when using --api-url.")
+
+    llm = get_llm_api(
+        model=args.model,
+        api_key=args.api_key,
+        api_url=args.api_url,
+        completion_token_limit=args.completion_token_limit,
+        ollama_compatibility_on=args.ollama_compatibility_on,
+    )
 
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
     data_dir: str = os.path.join(script_dir, "../data")

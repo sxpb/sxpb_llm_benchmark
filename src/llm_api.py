@@ -126,3 +126,29 @@ class OpenAiApi(LlmApi):
         llm_answer = content.strip() if content else ""
         prompt_tokens = response.usage.prompt_tokens if response.usage else 0
         return {"answer": llm_answer, "prompt_tokens": prompt_tokens}
+
+
+def get_llm_api(
+    model: str,
+    api_key: Optional[str] = None,
+    api_url: Optional[str] = None,
+    completion_token_limit: int = 4000,
+    ollama_compatibility_on: bool = False,
+) -> LlmApi:
+    """
+    Factory function to get the appropriate LLM API instance.
+    """
+    if api_key:
+        return OpenAiApi(
+            model=model,
+            api_key=api_key,
+            base_url=api_url,
+            completion_token_limit=completion_token_limit,
+            ollama_compatibility_on=ollama_compatibility_on,
+        )
+    else:
+        return LlamaCppApi(
+            model_identifier=model,
+            completion_token_limit=completion_token_limit,
+            ollama_compatibility_on=ollama_compatibility_on,
+        )

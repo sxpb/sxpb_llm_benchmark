@@ -9,7 +9,7 @@ from src.benchmark_storage import (
 )
 from src.benchmark_report import calculate_format_results, generate_toon_report
 from src.generate_data import generate_json, generate_yaml, generate_xml, generate_toon
-from src.llm_api import LlamaCppApi, OpenAiApi
+from src.llm_api import get_llm_api
 import sxpb
 
 
@@ -52,20 +52,13 @@ def main():
     )
     args = parser.parse_args()
 
-    if args.api_key:
-        llm_api = OpenAiApi(
-            model=args.model,
-            api_key=args.api_key,
-            base_url=args.api_url,
-            completion_token_limit=args.completion_token_limit,
-            ollama_compatibility_on=args.ollama_compatibility_on,
-        )
-    else:
-        llm_api = LlamaCppApi(
-            model_identifier=args.model,
-            completion_token_limit=args.completion_token_limit,
-            ollama_compatibility_on=args.ollama_compatibility_on,
-        )
+    llm_api = get_llm_api(
+        model=args.model,
+        api_key=args.api_key,
+        api_url=args.api_url,
+        completion_token_limit=args.completion_token_limit,
+        ollama_compatibility_on=args.ollama_compatibility_on,
+    )
 
     model_id = args.model.replace("/", "_")
 
