@@ -1,4 +1,5 @@
 import re
+import math
 from typing import Dict, Any, Tuple, Literal, Optional, Set, Union, List
 from datetime import datetime
 
@@ -80,8 +81,9 @@ def normalize_number(
         parsed_number /= 100
 
     if options["decimal_places"] is not None:
-        factor = 10 ** options["decimal_places"]
-        parsed_number = round(parsed_number * factor) / factor
+        if math.isfinite(parsed_number):
+            factor = 10 ** options["decimal_places"]
+            parsed_number = round(parsed_number * factor) / factor
 
     return True, parsed_number
 
