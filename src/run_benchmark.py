@@ -110,10 +110,13 @@ def run_benchmark(
 
         # The final answer should be on the last line, starting with "Final Answer:"
         llm_answer_lines = llm_answer.strip().split("\n")
-        final_answer_line = llm_answer_lines[-1]
+        final_answer_line = llm_answer_lines[-1].strip()
+
+        # Clean potential markdown bolding
+        final_answer_line = final_answer_line.replace("**", "")
 
         is_correct = False
-        if final_answer_line.startswith("Final Answer:"):
+        if final_answer_line.lower().startswith("final answer:"):
             final_answer = final_answer_line[len("Final Answer:") :].strip()
             is_correct = expected_answer in final_answer
 

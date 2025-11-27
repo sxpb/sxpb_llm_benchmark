@@ -44,6 +44,12 @@ def main():
         action="store_true",
         help="Enable Ollama compatibility mode. This will cause a completion_token_limit of 0 to be sent as -1.",
     )
+    parser.add_argument(
+        "--use-json-answer",
+        "--use_json_answer",
+        action="store_true",
+        help="Request the answer in JSON format.",
+    )
     args = parser.parse_args()
 
     if args.api_key:
@@ -108,7 +114,11 @@ def main():
                         flush=True,
                     )
                     result = evaluate_question(
-                        question, format_name, formatted_data, llm_api
+                        question,
+                        format_name,
+                        formatted_data,
+                        llm_api,
+                        use_json_output=args.use_json_answer,
                     )
                     if result["isCorrect"]:
                         print(f" -- {question['id']} PASS")
