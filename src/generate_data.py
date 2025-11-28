@@ -1,6 +1,7 @@
 import yaml
 import os
 import sxpb
+import sxpb.jsonutil
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import OrderedDict
@@ -11,6 +12,109 @@ from typing import Any, Dict, List
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 DataType = List[Dict[str, Any]]
+
+
+class DataContext:
+    def __init__(self, native_data: Any):
+        self.native_data = native_data
+        self.plain_data = sxpb.jsonutil.to_plain_types(native_data)
+
+        if not isinstance(self.plain_data, dict):
+            raise ValueError("Data root must be a dictionary.")
+
+        self.plain_data_dict = self.plain_data
+        # Assumes the first key is the root element name
+        if not self.plain_data_dict:
+            raise ValueError("Data dictionary is empty.")
+
+        self.root_element_name = list(self.plain_data_dict.keys())[0]
+        self.data_list = self.plain_data_dict[self.root_element_name]
+
+        # While we don't strictly enforce data_list being a list here,
+        # some generators (like jsonl, xml) expect it.
+        # We leave validation to the generators or the caller if specific structure is needed.
+
+
+SUPPORTED_FORMATS = sorted(
+    [
+        "json",
+        "json.compact",
+        "json.oneline",
+        "jsonl",
+        "jsonl.compact",
+        "sxpb",
+        "sxpb.compact",
+        "sxpb.oneline",
+        "txtpb",
+        "txtpb.compact",
+        "txtpb.oneline",
+        "toon",
+        "xml",
+        "xml.compact",
+        "yaml",
+    ]
+)
+
+
+def generate_formatted_output(format_name: str, context: DataContext) -> str:
+    """
+    Generates the formatted output for the given format name using the data from the context.
+    """
+    if format_name == "json":
+        return generate_json(context.plain_data_dict)
+    elif format_name == "json.compact":
+        return generate_json(context.plain_data_dict, mode="compact")
+    elif format_name == "json.oneline":
+        return generate_json(context.plain_data_dict, mode="oneline")
+    elif format_name == "jsonl":
+        if not isinstance(context.data_list, list):
+            raise ValueError("jsonl requires a list of items")
+        return generate_jsonl(context.data_list)
+    elif format_name == "jsonl.compact":
+        if not isinstance(context.data_list, list):
+            raise ValueError("jsonl requires a list of items")
+        return generate_jsonl(context.data_list, mode="compact")
+    elif format_name == "sxpb":
+        return generate_sxpb(context.native_data)
+    elif format_name == "sxpb.compact":
+        return generate_sxpb(context.native_data, mode="compact")
+    elif format_name == "sxpb.oneline":
+        return generate_sxpb(context.native_data, mode="oneline")
+    elif format_name == "txtpb":
+        return generate_txtpb(context.data_list, context.root_element_name)
+    elif format_name == "txtpb.compact":
+        return generate_txtpb(
+            context.data_list, context.root_element_name, mode="compact"
+        )
+    elif format_name == "txtpb.oneline":
+        return generate_txtpb(
+            context.data_list, context.root_element_name, mode="oneline"
+        )
+    elif format_name == "toon":
+        return generate_toon(context.plain_data_dict)
+    elif format_name == "yaml":
+        return generate_yaml(context.plain_data_dict)
+    elif format_name == "xml":
+        return generate_xml(context.data_list, context.root_element_name)
+    elif format_name == "xml.compact":
+        return generate_xml(
+            context.data_list, context.root_element_name, mode="compact"
+        )
+    else:
+        raise ValueError(f"Unsupported format: {format_name}")
+
+
+def generate_all_outputs(context: DataContext) -> Dict[str, str]:
+    """Generates outputs for all supported formats."""
+    outputs = {}
+    for format_name in SUPPORTED_FORMATS:
+        try:
+            outputs[format_name] = generate_formatted_output(format_name, context)
+        except Exception as e:
+            # We catch exceptions here to avoid failing entirely if one format fails for some data shape reason
+            # But normally we might want to propagate. For now, let's propagate to fail fast.
+            raise e
+    return outputs
 
 
 # From https://stackoverflow.com/a/21912744

@@ -5,37 +5,12 @@ import sxpb.jsonutil
 import time
 from src.prompt_creation import create_prompt
 from src.generate_data import (
-    generate_json,
-    generate_jsonl,
-    generate_txtpb,
-    generate_xml,
-    generate_yaml,
-    generate_sxpb,
-    generate_toon,
+    DataContext,
+    generate_all_outputs,
+    SUPPORTED_FORMATS,
 )
 from typing import Any, Dict, List, Optional
 from src.llm_api import LlmApi, get_llm_api, add_llm_args
-
-
-SUPPORTED_FORMATS = sorted(
-    [
-        "json",
-        "json.compact",
-        "json.oneline",
-        "jsonl",
-        "jsonl.compact",
-        "sxpb",
-        "sxpb.compact",
-        "sxpb.oneline",
-        "txtpb",
-        "txtpb.compact",
-        "txtpb.oneline",
-        "toon",
-        "xml",
-        "xml.compact",
-        "yaml",
-    ]
-)
 
 
 def call_llm(
@@ -248,41 +223,24 @@ def process_benchmark(
         print(f"Error: Could not parse data from {sxpb_file_path}")
         return
 
-    plain_data = sxpb.jsonutil.to_plain_types(native_data)
-
-    data_list: List[Dict[str, Any]]
-    root_element_name = "item"
-    plain_data_dict: Dict[str, Any]
-
-    if not isinstance(plain_data, dict):
-        print(f"Error: data.sxpb root is not a dictionary in {sxpb_file_path}")
+    try:
+        context = DataContext(native_data)
+        generated_data = generate_all_outputs(context)
+    except ValueError as e:
+        print(f"Error preparing data for {benchmark_name}: {e}")
         return
-    plain_data_dict = plain_data
-    root_element_name = list(plain_data_dict.keys())[0]
-    data_list = plain_data_dict[root_element_name]
-
-    generated_data: Dict[str, str] = {
-        "json": generate_json(plain_data_dict),
-        "json.compact": generate_json(plain_data_dict, mode="compact"),
-        "json.oneline": generate_json(plain_data_dict, mode="oneline"),
-        "jsonl": generate_jsonl(data_list),
-        "jsonl.compact": generate_jsonl(data_list, mode="compact"),
-        "sxpb": generate_sxpb(native_data),
-        "sxpb.compact": generate_sxpb(native_data, mode="compact"),
-        "sxpb.oneline": generate_sxpb(native_data, mode="oneline"),
-        "txtpb": generate_txtpb(data_list, root_element_name),
-        "txtpb.compact": generate_txtpb(data_list, root_element_name, mode="compact"),
-        "txtpb.oneline": generate_txtpb(data_list, root_element_name, mode="oneline"),
-        "toon": generate_toon(plain_data_dict),
-        "yaml": generate_yaml(plain_data_dict),
-        "xml": generate_xml(data_list, root_element_name),
-        "xml.compact": generate_xml(data_list, root_element_name, mode="compact"),
-    }
+    except Exception as e:
+        print(f"Error generating formatted data for {benchmark_name}: {e}")
+        return
 
     results: Dict[str, Any] = {}
     formats_to_run = [args.format] if args.format else SUPPORTED_FORMATS
 
     for data_format in formats_to_run:
+        if data_format not in generated_data:
+             print(f"Warning: {data_format} generation failed or not supported.")
+             continue
+
         raw_content = generated_data[data_format]
         if not qa_data or not isinstance(qa_data, list):
             print("Warning: qa_data is not a list, skipping benchmark.")
