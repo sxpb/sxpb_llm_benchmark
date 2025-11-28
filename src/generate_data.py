@@ -7,7 +7,7 @@ from xml.dom import minidom
 from collections import OrderedDict
 import json
 from toon_format import encode
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -56,9 +56,10 @@ SUPPORTED_FORMATS = sorted(
 )
 
 
-def generate_formatted_output(format_name: str, context: DataContext) -> str:
+def generate_formatted_output(format_name: str, context: DataContext) -> Optional[str]:
     """
     Generates the formatted output for the given format name using the data from the context.
+    Returns None if the data shape is incompatible with the format (e.g. jsonl requires a list).
     """
     if format_name == "json":
         return generate_json(context.plain_data_dict)
@@ -68,11 +69,11 @@ def generate_formatted_output(format_name: str, context: DataContext) -> str:
         return generate_json(context.plain_data_dict, mode="oneline")
     elif format_name == "jsonl":
         if not isinstance(context.data_list, list):
-            raise ValueError("jsonl requires a list of items")
+            return None
         return generate_jsonl(context.data_list)
     elif format_name == "jsonl.compact":
         if not isinstance(context.data_list, list):
-            raise ValueError("jsonl requires a list of items")
+            return None
         return generate_jsonl(context.data_list, mode="compact")
     elif format_name == "sxpb":
         return generate_sxpb(context.native_data)
@@ -108,12 +109,9 @@ def generate_all_outputs(context: DataContext) -> Dict[str, str]:
     """Generates outputs for all supported formats."""
     outputs = {}
     for format_name in SUPPORTED_FORMATS:
-        try:
-            outputs[format_name] = generate_formatted_output(format_name, context)
-        except Exception as e:
-            # We catch exceptions here to avoid failing entirely if one format fails for some data shape reason
-            # But normally we might want to propagate. For now, let's propagate to fail fast.
-            raise e
+        result = generate_formatted_output(format_name, context)
+        if result is not None:
+            outputs[format_name] = result
     return outputs
 
 

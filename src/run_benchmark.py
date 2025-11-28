@@ -234,12 +234,12 @@ def process_benchmark(
         return
 
     results: Dict[str, Any] = {}
-    formats_to_run = [args.format] if args.format else SUPPORTED_FORMATS
+    formats_to_run = [args.format] if args.format else sorted(generated_data.keys())
 
     for data_format in formats_to_run:
         if data_format not in generated_data:
-             print(f"Warning: {data_format} generation failed or not supported.")
-             continue
+            print(f"Warning: {data_format} generation failed or not supported.")
+            continue
 
         raw_content = generated_data[data_format]
         if not qa_data or not isinstance(qa_data, list):
