@@ -1,3 +1,4 @@
+from __future__ import annotations
 from abc import ABC, abstractmethod
 from typing import Any, Dict, List, Optional, cast
 import psutil
@@ -5,6 +6,8 @@ from huggingface_hub import hf_hub_download
 import os
 import openai
 import argparse
+from llama_cpp import Llama
+from llama_cpp.llama_types import ChatCompletionRequestMessage
 
 
 DEFAULT_N_THREADS = 4
@@ -48,19 +51,11 @@ class LlamaCppApi(LlmApi):
             completion_token_limit=completion_token_limit,
             ollama_compatibility_on=ollama_compatibility_on,
         )
-        self.llm: Optional["Llama"] = None
+        self.llm: Optional[Llama] = None
         self._initialize_llm(model_identifier)
 
     def _initialize_llm(self, model_identifier: str) -> None:
         """Initializes the LLM instance."""
-        try:
-            from llama_cpp import Llama
-        except ImportError:
-            raise ImportError(
-                "llama-cpp-python is required for local LLM execution. "
-                "Please install it with: pip install llama-cpp-python"
-            )
-
         model_path: str
 
         if os.path.exists(model_identifier):
@@ -106,9 +101,6 @@ class LlamaCppApi(LlmApi):
     def _raw_call_llm(self, prompt: str) -> Dict[str, Any]:
         if self.llm is None:
             raise Exception("LLM not initialized.")
-
-        # Local import to avoid top-level dependency
-        from llama_cpp.llama_types import ChatCompletionRequestMessage
 
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]
         output: Any = self.llm.create_chat_completion(

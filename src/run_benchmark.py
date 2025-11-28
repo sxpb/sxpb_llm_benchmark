@@ -13,7 +13,7 @@ from src.generate_data import (
     generate_sxpb,
     generate_toon,
 )
-from typing import Any, Dict, List, Optional, Tuple
+from typing import Any, Dict, List, Optional
 from src.llm_api import LlmApi, get_llm_api, add_llm_args
 
 
@@ -197,7 +197,7 @@ def setup_logging(log_dir: Optional[str]) -> Optional[str]:
             os.makedirs(log_dir)
         log_context_file = os.path.join(log_dir, "context_log.txt")
         # Clear the log file at the beginning of the run
-        with open(log_context_file, "w", encoding="utf-8") as f:
+        with open(log_context_file, "w", encoding="utf-8") as _:
             pass
     return log_context_file
 
