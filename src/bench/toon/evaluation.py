@@ -115,11 +115,7 @@ Answer:
 
     start_time = time.time()
 
-    try:
-        response = llm_api.call_llm(prompt)
-    except Exception as e:
-        print(f"Error calling LLM: {e}")
-        response = {"answer": f"ERROR_LLM_TIMEOUT: {e}", "prompt_tokens": 0}
+    response = llm_api.call_llm(prompt)
 
     latency_ms = (time.time() - start_time) * 1000
 

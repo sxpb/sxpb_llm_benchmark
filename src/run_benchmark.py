@@ -14,7 +14,7 @@ from src.generate_data import (
     generate_toon,
 )
 from typing import Any, Dict, List, Optional, Tuple
-from src.llm_api import LlmApi, get_llm_api
+from src.llm_api import LlmApi, get_llm_api, add_llm_args
 
 
 SUPPORTED_FORMATS = sorted(
@@ -31,7 +31,6 @@ SUPPORTED_FORMATS = sorted(
         "txtpb.compact",
         "txtpb.oneline",
         "toon",
-        "toon.compact",
         "xml",
         "xml.compact",
         "yaml",
@@ -43,12 +42,7 @@ def call_llm(
     llm: LlmApi, prompt: str, log_context_file: Optional[str] = None
 ) -> Dict[str, Any]:
     """Calls the local LLM to get a response and returns answer and token usage."""
-    try:
-        llm_response = llm.call_llm(prompt)
-    except Exception as e:
-        print(f"Error calling LLM: {e}")
-        llm_response = {"answer": f"ERROR_LLM_TIMEOUT: {e}", "prompt_tokens": 0}
-
+    llm_response = llm.call_llm(prompt)
     llm_answer = llm_response["answer"]
 
     if log_context_file:
@@ -180,26 +174,6 @@ def parse_arguments() -> argparse.Namespace:
         help="The name of the benchmark to run (e.g., exoplanet or chronocrystal). Defaults to 'all'.",
     )
     parser.add_argument(
-        "--model",
-        type=str,
-        default="ggml-org/gemma-3-270m-it-GGUF/gemma-3-270m-it-Q8_0.gguf",
-        help="The model to use. For llama-cpp, this can be a local file path or a Hugging Face repo ID. For OpenAI/OpenRouter, this is the model name.",
-    )
-    parser.add_argument(
-        "--api-key",
-        "--api_key",
-        type=str,
-        default=None,
-        help="API key for OpenAI or OpenRouter. Required if --api-url is set.",
-    )
-    parser.add_argument(
-        "--api-url",
-        "--api_url",
-        type=str,
-        default=None,
-        help="If specified, runs the benchmark against an OpenAI-compatible API at this URL. Otherwise, runs locally using llama-cpp-python.",
-    )
-    parser.add_argument(
         "--format",
         type=_check_format,
         default=None,
@@ -212,19 +186,7 @@ def parse_arguments() -> argparse.Namespace:
         default=None,
         help="If specified, saves the benchmark results and context logs to this directory.",
     )
-    parser.add_argument(
-        "--completion-token-limit",
-        "--completion_token_limit",
-        type=int,
-        default=4000,
-        help="The maximum number of tokens to generate for each completion. Set to 0 for no limit.",
-    )
-    parser.add_argument(
-        "--ollama-compatibility-on",
-        "--ollama_compatibility_on",
-        action="store_true",
-        help="Enable Ollama compatibility mode. This will cause a completion_token_limit of 0 to be sent as -1.",
-    )
+    add_llm_args(parser)
     return parser.parse_args()
 
 
@@ -312,7 +274,6 @@ def process_benchmark(
         "txtpb.compact": generate_txtpb(data_list, root_element_name, mode="compact"),
         "txtpb.oneline": generate_txtpb(data_list, root_element_name, mode="oneline"),
         "toon": generate_toon(plain_data_dict),
-        "toon.compact": generate_toon(plain_data_dict, mode="compact"),
         "yaml": generate_yaml(plain_data_dict),
         "xml": generate_xml(data_list, root_element_name),
         "xml.compact": generate_xml(data_list, root_element_name, mode="compact"),

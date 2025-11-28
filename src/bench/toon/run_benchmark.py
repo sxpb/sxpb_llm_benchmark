@@ -9,40 +9,19 @@ from src.bench.toon.storage import (
 )
 from src.bench.toon.report import calculate_format_results, generate_toon_report
 from src.generate_data import generate_json, generate_yaml, generate_xml, generate_toon
-from src.llm_api import get_llm_api
+from src.llm_api import get_llm_api, add_llm_args
 import sxpb
 
 
 def main():
     parser = argparse.ArgumentParser(description="Run retrieval toon benchmark.")
-    parser.add_argument(
-        "--model", type=str, required=True, help="Model ID to use for the benchmark."
-    )
-    parser.add_argument(
-        "--api-key", "--api_key", type=str, help="API key for OpenAI API."
-    )
-    parser.add_argument(
-        "--api-url", "--api_url", type=str, help="Base URL for OpenAI-compatible API."
-    )
+    add_llm_args(parser)
     parser.add_argument(
         "--fullsize-ratio",
         "--fullsize_ratio",
         type=float,
         default=1.0,
         help="Ratio to scale the dataset sizes.",
-    )
-    parser.add_argument(
-        "--completion-token-limit",
-        "--completion_token_limit",
-        type=int,
-        default=4000,
-        help="The maximum number of tokens to generate for each completion. Set to 0 for no limit.",
-    )
-    parser.add_argument(
-        "--ollama-compatibility-on",
-        "--ollama_compatibility_on",
-        action="store_true",
-        help="Enable Ollama compatibility mode. This will cause a completion_token_limit of 0 to be sent as -1.",
     )
     parser.add_argument(
         "--use-json-answer",

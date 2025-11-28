@@ -8,9 +8,10 @@ from src.llm_api import LlmApi
 
 class MockLlmApi(LlmApi):
     def __init__(self, answer: str):
+        super().__init__()
         self.answer = answer
 
-    def call_llm(self, prompt: str) -> Dict[str, Any]:
+    def _raw_call_llm(self, prompt: str) -> Dict[str, Any]:
         return {"answer": self.answer, "prompt_tokens": 10}
 
 
