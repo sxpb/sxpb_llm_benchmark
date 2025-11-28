@@ -12,6 +12,18 @@ DEFAULT_N_THREADS = 4
 
 
 class LlmApi(ABC):
+    def __init__(
+        self,
+        completion_token_limit: Optional[int] = 4000,
+        ollama_compatibility_on: bool = False,
+    ):
+        self.max_tokens = completion_token_limit
+        if self.max_tokens == 0:
+            if ollama_compatibility_on:
+                self.max_tokens = -1
+            else:
+                self.max_tokens = None
+
     @abstractmethod
     def call_llm(self, prompt: str) -> Dict[str, Any]:
         pass
@@ -24,13 +36,11 @@ class LlamaCppApi(LlmApi):
         completion_token_limit: Optional[int] = 4000,
         ollama_compatibility_on: bool = False,
     ):
+        super().__init__(
+            completion_token_limit=completion_token_limit,
+            ollama_compatibility_on=ollama_compatibility_on,
+        )
         self.llm: Optional[Llama] = None
-        self.max_tokens = completion_token_limit
-        if self.max_tokens == 0:
-            if ollama_compatibility_on:
-                self.max_tokens = -1
-            else:
-                self.max_tokens = None
         self._initialize_llm(model_identifier)
 
     def _initialize_llm(self, model_identifier: str) -> None:
@@ -104,16 +114,14 @@ class OpenAiApi(LlmApi):
         completion_token_limit: Optional[int] = 4000,
         ollama_compatibility_on: bool = False,
     ):
+        super().__init__(
+            completion_token_limit=completion_token_limit,
+            ollama_compatibility_on=ollama_compatibility_on,
+        )
         if not api_key:
             raise ValueError("API key is required for OpenAI API.")
         self.model = model
         self.client = openai.OpenAI(api_key=api_key, base_url=base_url)
-        self.max_tokens = completion_token_limit
-        if self.max_tokens == 0:
-            if ollama_compatibility_on:
-                self.max_tokens = -1
-            else:
-                self.max_tokens = None
 
     def call_llm(self, prompt: str) -> Dict[str, Any]:
         messages: List[Dict[str, str]] = [{"role": "user", "content": prompt}]

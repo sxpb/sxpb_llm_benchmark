@@ -24,7 +24,9 @@ def main():
     api = OpenAiApi(model=args.model, api_key=args.api_key, base_url=args.api_url)
     prompt = sys.stdin.read()
 
-    while True:
+    max_retries = 10
+    retries = 0
+    while retries < max_retries:
         print("Sending prompt to LLM...", file=sys.stderr)
         response = api.call_llm(prompt)
         llm_answer = response["answer"]
@@ -43,6 +45,11 @@ def main():
             break
         except Exception as e:
             prompt = f"Syntax error in SxPB block: {e}. Please fix it."
+
+        retries += 1
+    else:
+        print(f"Max retries ({max_retries}) reached. Exiting.", file=sys.stderr)
+        sys.exit(1)
 
 
 if __name__ == "__main__":
