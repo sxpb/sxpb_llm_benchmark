@@ -1,14 +1,10 @@
 from abc import ABC, abstractmethod
-from typing import Any, Dict, List, Optional, cast, TYPE_CHECKING
+from typing import Any, Dict, List, Optional, cast
 import psutil
 from huggingface_hub import hf_hub_download
 import os
 import openai
 import argparse
-
-if TYPE_CHECKING:
-    from llama_cpp import Llama
-    from llama_cpp.llama_types import ChatCompletionRequestMessage
 
 
 DEFAULT_N_THREADS = 4
