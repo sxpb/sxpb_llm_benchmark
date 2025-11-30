@@ -10,7 +10,28 @@ from src.bench.toon.storage import (
 from src.bench.toon.report import calculate_format_results, generate_toon_report
 from src.generate_data import generate_json, generate_yaml, generate_xml, generate_toon
 from src.llm_api import get_llm_api, add_llm_args
+from typing import Dict, Any
 import sxpb
+
+
+def format_xml(data: Dict[str, Any], dataset_name: str) -> str:
+    # Heuristic: if data has exactly 1 key and the value is a list,
+    # assume it's a wrapper and the key is the root element name.
+    if len(data) == 1 and isinstance(list(data.values())[0], list):
+        root_name = list(data.keys())[0]
+        return generate_xml(data[root_name], root_element_name=root_name)
+
+    # Otherwise, wrap the data in a list and use the dataset name (or "root") as the element name.
+    # We use "root" default because generate_xml strips the top-level <root> tag,
+    # leaving us with a fragment if we pass a list of items.
+    # However, here we pass a single item [data], so generate_xml creates <root_name>...</root_name>.
+
+    root_name = dataset_name if dataset_name else "root"
+    # specific fix for nested-config to look nicer
+    if dataset_name == "nested-config":
+        root_name = "config"
+
+    return generate_xml([data], root_element_name=root_name)
 
 
 def main():
@@ -46,13 +67,11 @@ def main():
     questions = generate_questions(toon_datasets)
 
     formatters = {
-        "sxpb": lambda data: sxpb.dumps(data, indent=1),
-        "json": lambda data: generate_json(data, mode="pretty"),
-        "yaml": lambda data: generate_yaml(data),
-        "toon": lambda data: generate_toon(data, mode="pretty"),
-        "xml": lambda data: generate_xml(
-            list(data.values())[0], root_element_name=list(data.keys())[0]
-        ),
+        "sxpb": lambda data, _: sxpb.dumps(data, indent=1),
+        "json": lambda data, _: generate_json(data, mode="pretty"),
+        "yaml": lambda data, _: generate_yaml(data),
+        "toon": lambda data, _: generate_toon(data, mode="pretty"),
+        "xml": format_xml,
     }
 
     if has_model_results(model_id):
@@ -77,7 +96,7 @@ def main():
 
             for format_name, formatter in formatters.items():
                 print(f"  Running benchmark for format: {format_name}")
-                formatted_data = formatter(dataset["data"])
+                formatted_data = formatter(dataset["data"], dataset_name)
                 for question in dataset_questions:
                     evaluations_processed += 1
                     print(
