@@ -5,44 +5,18 @@ import sxpb.jsonutil
 import time
 from src.prompt_creation import create_prompt
 from src.generate_data import (
-    generate_json,
-    generate_jsonl,
-    generate_txtpb,
-    generate_xml,
-    generate_yaml,
-    generate_sxpb,
+    DataContext,
+    generate_all_outputs,
+    SUPPORTED_FORMATS,
 )
 from typing import Any, Dict, List, Optional
-from src.llm_api import LlmApi, LlamaCppApi, OpenAiApi
-
-# Global variable to hold the LLM instance
-llm: Optional[LlmApi] = None
-
-SUPPORTED_FORMATS = sorted(
-    [
-        "json",
-        "json.compact",
-        "json.oneline",
-        "jsonl",
-        "jsonl.compact",
-        "sxpb",
-        "sxpb.compact",
-        "sxpb.oneline",
-        "txtpb",
-        "txtpb.compact",
-        "txtpb.oneline",
-        "xml",
-        "xml.compact",
-        "yaml",
-    ]
-)
+from src.llm_api import LlmApi, get_llm_api, add_llm_args
 
 
-def call_llm(prompt: str, log_context_file: Optional[str] = None) -> Dict[str, Any]:
+def call_llm(
+    llm: LlmApi, prompt: str, log_context_file: Optional[str] = None
+) -> Dict[str, Any]:
     """Calls the local LLM to get a response and returns answer and token usage."""
-    if llm is None:
-        raise Exception("LLM not initialized. Please call initialize_llm() first.")
-
     llm_response = llm.call_llm(prompt)
     llm_answer = llm_response["answer"]
 
@@ -51,19 +25,25 @@ def call_llm(prompt: str, log_context_file: Optional[str] = None) -> Dict[str, A
             f.write("--- Input ---\n")
             f.write(prompt)
             f.write("\n\n--- Output ---\n")
-            f.write(llm_answer)
+            f.write(str(llm_answer))
             f.write("\n\n")
 
     return llm_response
 
 
+def format_for_display(format_name: str) -> str:
+    """Formats the given format name for display."""
+    return format_name.upper().replace("SXPB", "SxPB")
+
+
 def run_benchmark(
+    llm: LlmApi,
     data_format: str,
     qa_data: List[Dict[str, Any]],
     raw_file_content: str,
     log_context_file: Optional[str] = None,
 ) -> Dict[str, Any]:
-    print(f"\n--- Running benchmark for {data_format.upper()} ---")
+    print(f"\n--- Running benchmark for {format_for_display(data_format)} ---")
 
     if not qa_data:
         print("No QA data found, skipping benchmark.")
@@ -89,7 +69,7 @@ def run_benchmark(
         total_prompt_bytes += prompt_bytes
 
         start_time = time.time()
-        llm_response = call_llm(prompt, log_context_file=log_context_file)
+        llm_response = call_llm(llm, prompt, log_context_file=log_context_file)
         end_time = time.time()
 
         llm_answer = llm_response["answer"]
@@ -100,10 +80,13 @@ def run_benchmark(
 
         # The final answer should be on the last line, starting with "Final Answer:"
         llm_answer_lines = llm_answer.strip().split("\n")
-        final_answer_line = llm_answer_lines[-1]
+        final_answer_line = llm_answer_lines[-1].strip()
+
+        # Clean potential markdown bolding
+        final_answer_line = final_answer_line.replace("**", "")
 
         is_correct = False
-        if final_answer_line.startswith("Final Answer:"):
+        if final_answer_line.lower().startswith("final answer:"):
             final_answer = final_answer_line[len("Final Answer:") :].strip()
             is_correct = expected_answer in final_answer
 
@@ -144,8 +127,17 @@ def run_benchmark(
     }
 
 
-def main() -> None:
-    global llm
+def _check_format(value: str) -> str:
+    """Checks if the given format is supported, case-insensitively."""
+    lower_value = value.lower()
+    if lower_value in SUPPORTED_FORMATS:
+        return lower_value
+    raise argparse.ArgumentTypeError(
+        f"invalid choice: '{value}' (choose from {', '.join(SUPPORTED_FORMATS)})"
+    )
+
+
+def parse_arguments() -> argparse.Namespace:
     parser = argparse.ArgumentParser(description="Run a benchmark for a given dataset.")
     parser.add_argument(
         "benchmark_name",
@@ -155,54 +147,152 @@ def main() -> None:
         help="The name of the benchmark to run (e.g., exoplanet or chronocrystal). Defaults to 'all'.",
     )
     parser.add_argument(
-        "--model",
-        type=str,
-        default="ggml-org/gemma-3-270m-it-GGUF/gemma-3-270m-it-Q8_0.gguf",
-        help="The model to use. For llama-cpp, this can be a local file path or a Hugging Face repo ID. For OpenAI/OpenRouter, this is the model name.",
-    )
-    parser.add_argument(
-        "--api-key",
-        type=str,
-        default=None,
-        help="API key for OpenAI or OpenRouter. Required if --api-url is set.",
-    )
-    parser.add_argument(
-        "--api-url",
-        type=str,
-        default=None,
-        help="If specified, runs the benchmark against an OpenAI-compatible API at this URL. Otherwise, runs locally using llama-cpp-python.",
-    )
-    parser.add_argument(
         "--format",
-        type=str,
+        type=_check_format,
         default=None,
-        choices=SUPPORTED_FORMATS,
         help="If specified, runs the benchmark only for this data format.",
     )
     parser.add_argument(
         "--log-dir",
+        "--log_dir",
         type=str,
         default=None,
         help="If specified, saves the benchmark results and context logs to this directory.",
     )
-    args = parser.parse_args()
+    add_llm_args(parser)
+    return parser.parse_args()
+
+
+def setup_logging(log_dir: Optional[str]) -> Optional[str]:
+    log_context_file: Optional[str] = None
+    if log_dir:
+        if not os.path.exists(log_dir):
+            os.makedirs(log_dir)
+        log_context_file = os.path.join(log_dir, "context_log.txt")
+        # Clear the log file at the beginning of the run
+        with open(log_context_file, "w", encoding="utf-8") as _:
+            pass
+    return log_context_file
+
+
+def process_benchmark(
+    llm: LlmApi,
+    benchmark_name: str,
+    args: argparse.Namespace,
+    log_context_file: Optional[str],
+    overall_results: Dict[str, Dict[str, int]],
+    max_format_len: int,
+) -> None:
+    print(f"\n===== Running Benchmark: {benchmark_name} =====")
+    script_dir: str = os.path.dirname(os.path.abspath(__file__))
+    data_dir: str = os.path.join(script_dir, "../data")
+    benchmark_dir: str = os.path.join(data_dir, benchmark_name)
+
+    if not os.path.isdir(benchmark_dir):
+        print(f"Error: Benchmark directory not found at {benchmark_dir}")
+        return
+
+    # Load QA data
+    qa_sxpb_file_path: str = os.path.join(benchmark_dir, "qa.sxpb")
+    if not os.path.isfile(qa_sxpb_file_path):
+        print(f"Error: QA file not found at {qa_sxpb_file_path}")
+        return
+    with open(qa_sxpb_file_path, "r", encoding="utf-8") as f:
+        raw_qa_sxpb_content: str = f.read()
+    qa_data = sxpb.loads(raw_qa_sxpb_content)
+    if qa_data is None:
+        print(f"Error: Could not parse QA data from {qa_sxpb_file_path}")
+        return
+
+    # Load and parse the source of truth: data.sxpb
+    sxpb_file_path: str = os.path.join(benchmark_dir, "data.sxpb")
+    if not os.path.isfile(sxpb_file_path):
+        print(f"Error: data.sxpb not found in {benchmark_dir}")
+        return
+    with open(sxpb_file_path, "r", encoding="utf-8") as f:
+        raw_sxpb_content: str = f.read()
+
+    try:
+        native_data = sxpb.loads(raw_sxpb_content, precise=True)
+    except Exception as e:
+        print(f"Error parsing {sxpb_file_path}: {e}")
+        return
+    if native_data is None:
+        print(f"Error: Could not parse data from {sxpb_file_path}")
+        return
+
+    try:
+        context = DataContext(native_data)
+        generated_data = generate_all_outputs(context)
+    except ValueError as e:
+        print(f"Error preparing data for {benchmark_name}: {e}")
+        return
+    except Exception as e:
+        print(f"Error generating formatted data for {benchmark_name}: {e}")
+        return
+
+    results: Dict[str, Any] = {}
+    formats_to_run = [args.format] if args.format else sorted(generated_data.keys())
+
+    for data_format in formats_to_run:
+        if data_format not in generated_data:
+            print(f"Warning: {data_format} generation failed or not supported.")
+            continue
+
+        raw_content = generated_data[data_format]
+        if not qa_data or not isinstance(qa_data, list):
+            print("Warning: qa_data is not a list, skipping benchmark.")
+            continue
+        result = run_benchmark(
+            llm, data_format, qa_data, raw_content, log_context_file=log_context_file
+        )
+        results[data_format] = result
+        overall_results[data_format]["correct_predictions"] += result[
+            "correct_predictions"
+        ]
+        overall_results[data_format]["total_questions"] += result["total_questions"]
+        overall_results[data_format]["total_prompt_tokens"] += result[
+            "total_prompt_tokens"
+        ]
+        overall_results[data_format]["total_prompt_bytes"] += result[
+            "total_prompt_bytes"
+        ]
+
+    print(f"\n--- Benchmark Summary for {benchmark_name} ---")
+    for format_name in sorted(results.keys()):
+        result_data = results[format_name]
+        accuracy: float = result_data["accuracy"]
+        avg_time: float = result_data["average_time"]
+        print(
+            f"{format_for_display(format_name):<{max_format_len}}: Accuracy: {accuracy:.2f}%, Avg Time: {avg_time:.4f}s"
+        )
+
+    if args.log_dir:
+        results_file: str = os.path.join(
+            args.log_dir, f"benchmark_results_{benchmark_name}.sxpb"
+        )
+        with open(results_file, "w", encoding="utf-8") as f:
+            sxpb_output = sxpb.dumps(results, indent=1)
+            f.write(sxpb_output)
+        print(f"\nBenchmark results for {benchmark_name} saved to {results_file}")
+
+
+def main() -> None:
+    args = parse_arguments()
     selected_benchmark: str = args.benchmark_name
 
-    log_context_file: Optional[str] = None
-    if args.log_dir:
-        if not os.path.exists(args.log_dir):
-            os.makedirs(args.log_dir)
-        log_context_file = os.path.join(args.log_dir, "context_log.txt")
-        # Clear the log file at the beginning of the run
-        with open(log_context_file, "w", encoding="utf-8") as f:
-            pass
+    log_context_file = setup_logging(args.log_dir)
 
-    if args.api_url:
-        if not args.api_key:
-            raise ValueError("--api-key is required when using --api-url.")
-        llm = OpenAiApi(model=args.model, api_key=args.api_key, base_url=args.api_url)
-    else:
-        llm = LlamaCppApi(args.model)
+    if args.api_url and not args.api_key:
+        raise ValueError("--api-key is required when using --api-url.")
+
+    llm = get_llm_api(
+        model=args.model,
+        api_key=args.api_key,
+        api_url=args.api_url,
+        completion_token_limit=args.completion_token_limit,
+        ollama_compatibility_on=args.ollama_compatibility_on,
+    )
 
     script_dir: str = os.path.dirname(os.path.abspath(__file__))
     data_dir: str = os.path.join(script_dir, "../data")
@@ -231,116 +321,14 @@ def main() -> None:
         max_format_len = len(max(SUPPORTED_FORMATS, key=len))
 
     for benchmark_name in benchmark_names:
-        print(f"\n===== Running Benchmark: {benchmark_name} =====")
-        benchmark_dir: str = os.path.join(data_dir, benchmark_name)
-
-        if not os.path.isdir(benchmark_dir):
-            print(f"Error: Benchmark directory not found at {benchmark_dir}")
-            continue
-
-        # Load QA data
-        qa_sxpb_file_path: str = os.path.join(benchmark_dir, "qa.sxpb")
-        if not os.path.isfile(qa_sxpb_file_path):
-            print(f"Error: QA file not found at {qa_sxpb_file_path}")
-            continue
-        with open(qa_sxpb_file_path, "r", encoding="utf-8") as f:
-            raw_qa_sxpb_content: str = f.read()
-        qa_data = sxpb.loads(raw_qa_sxpb_content, builtin_only=True)
-        if qa_data is None:
-            print(f"Error: Could not parse QA data from {qa_sxpb_file_path}")
-            continue
-
-        # Load and parse the source of truth: data.sxpb
-        sxpb_file_path: str = os.path.join(benchmark_dir, "data.sxpb")
-        if not os.path.isfile(sxpb_file_path):
-            print(f"Error: data.sxpb not found in {benchmark_dir}")
-            continue
-        with open(sxpb_file_path, "r", encoding="utf-8") as f:
-            raw_sxpb_content: str = f.read()
-
-        try:
-            native_data = sxpb.loads(raw_sxpb_content)
-        except Exception as e:
-            print(f"Error parsing {sxpb_file_path}: {e}")
-            continue
-        if native_data is None:
-            print(f"Error: Could not parse data from {sxpb_file_path}")
-            continue
-
-        plain_data = sxpb.jsonutil.to_plain_types(native_data)
-
-        data_list: List[Dict[str, Any]]
-        root_element_name = "item"
-        plain_data_dict: Dict[str, Any]
-
-        if not isinstance(plain_data, dict):
-            print(f"Error: data.sxpb root is not a dictionary in {sxpb_file_path}")
-            continue
-        plain_data_dict = plain_data
-        root_element_name = list(plain_data_dict.keys())[0]
-        data_list = plain_data_dict[root_element_name]
-
-        generated_data: Dict[str, str] = {
-            "json": generate_json(plain_data_dict),
-            "json.compact": generate_json(plain_data_dict, mode="compact"),
-            "json.oneline": generate_json(plain_data_dict, mode="oneline"),
-            "jsonl": generate_jsonl(data_list),
-            "jsonl.compact": generate_jsonl(data_list, mode="compact"),
-            "sxpb": generate_sxpb(native_data),
-            "sxpb.compact": generate_sxpb(native_data, mode="compact"),
-            "sxpb.oneline": generate_sxpb(native_data, mode="oneline"),
-            "txtpb": generate_txtpb(data_list, root_element_name),
-            "txtpb.compact": generate_txtpb(
-                data_list, root_element_name, mode="compact"
-            ),
-            "txtpb.oneline": generate_txtpb(
-                data_list, root_element_name, mode="oneline"
-            ),
-            "yaml": generate_yaml(plain_data_dict),
-            "xml": generate_xml(data_list, root_element_name),
-            "xml.compact": generate_xml(data_list, root_element_name, mode="compact"),
-        }
-
-        results: Dict[str, Any] = {}
-        formats_to_run = [args.format] if args.format else SUPPORTED_FORMATS
-
-        for data_format in formats_to_run:
-            raw_content = generated_data[data_format]
-            if not qa_data or not isinstance(qa_data, list):
-                print("Warning: qa_data is not a list, skipping benchmark.")
-                continue
-            result = run_benchmark(
-                data_format, qa_data, raw_content, log_context_file=log_context_file
-            )
-            results[data_format] = result
-            overall_results[data_format]["correct_predictions"] += result[
-                "correct_predictions"
-            ]
-            overall_results[data_format]["total_questions"] += result["total_questions"]
-            overall_results[data_format]["total_prompt_tokens"] += result[
-                "total_prompt_tokens"
-            ]
-            overall_results[data_format]["total_prompt_bytes"] += result[
-                "total_prompt_bytes"
-            ]
-
-        print(f"\n--- Benchmark Summary for {benchmark_name} ---")
-        for format_name in sorted(results.keys()):
-            result_data = results[format_name]
-            accuracy: float = result_data["accuracy"]
-            avg_time: float = result_data["average_time"]
-            print(
-                f"{format_name.upper():<{max_format_len}}: Accuracy: {accuracy:.2f}%, Avg Time: {avg_time:.4f}s"
-            )
-
-        if args.log_dir:
-            results_file: str = os.path.join(
-                args.log_dir, f"benchmark_results_{benchmark_name}.sxpb"
-            )
-            with open(results_file, "w", encoding="utf-8") as f:
-                sxpb_output = sxpb.dumps(results, indent=1)
-                f.write(sxpb_output)
-            print(f"\nBenchmark results for {benchmark_name} saved to {results_file}")
+        process_benchmark(
+            llm,
+            benchmark_name,
+            args,
+            log_context_file,
+            overall_results,
+            max_format_len,
+        )
 
     if selected_benchmark == "all":
         print("\n--- Overall Benchmark Summary ---")
@@ -352,7 +340,7 @@ def main() -> None:
             prompt_bytes = data["total_prompt_bytes"]
             overall_accuracy = (correct / total) * 100 if total > 0 else 0
             print(
-                f"{fmt.upper():<{max_format_len}}: "
+                f"{format_for_display(fmt):<{max_format_len}}: "
                 f"Accuracy: {overall_accuracy:.2f}% ({correct}/{total}) | "
                 f"Input Tokens: {prompt_tokens} | Input Bytes: {prompt_bytes}"
             )

@@ -1,15 +1,114 @@
 import yaml
 import os
 import sxpb
+import sxpb.jsonutil
 import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import OrderedDict
 import json
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Optional
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
 DataType = List[Dict[str, Any]]
+
+
+class DataContext:
+    def __init__(self, native_data: Any):
+        self.native_data = native_data
+        self.plain_data = sxpb.jsonutil.to_plain_types(native_data)
+
+        if not isinstance(self.plain_data, dict):
+            raise ValueError("Data root must be a dictionary.")
+
+        self.plain_data_dict = self.plain_data
+        # Assumes the first key is the root element name
+        if not self.plain_data_dict:
+            raise ValueError("Data dictionary is empty.")
+
+        self.root_element_name = list(self.plain_data_dict.keys())[0]
+        self.data_list = self.plain_data_dict[self.root_element_name]
+
+        # While we don't strictly enforce data_list being a list here,
+        # some generators (like jsonl, xml) expect it.
+        # We leave validation to the generators or the caller if specific structure is needed.
+
+
+SUPPORTED_FORMATS = sorted(
+    [
+        "json",
+        "json.compact",
+        "json.oneline",
+        "jsonl",
+        "jsonl.compact",
+        "sxpb",
+        "sxpb.compact",
+        "sxpb.oneline",
+        "txtpb",
+        "txtpb.compact",
+        "txtpb.oneline",
+        "xml",
+        "xml.compact",
+        "yaml",
+    ]
+)
+
+
+def generate_formatted_output(format_name: str, context: DataContext) -> Optional[str]:
+    """
+    Generates the formatted output for the given format name using the data from the context.
+    Returns None if the data shape is incompatible with the format (e.g. jsonl requires a list).
+    """
+    if format_name == "json":
+        return generate_json(context.plain_data_dict)
+    elif format_name == "json.compact":
+        return generate_json(context.plain_data_dict, mode="compact")
+    elif format_name == "json.oneline":
+        return generate_json(context.plain_data_dict, mode="oneline")
+    elif format_name == "jsonl":
+        if not isinstance(context.data_list, list):
+            return None
+        return generate_jsonl(context.data_list)
+    elif format_name == "jsonl.compact":
+        if not isinstance(context.data_list, list):
+            return None
+        return generate_jsonl(context.data_list, mode="compact")
+    elif format_name == "sxpb":
+        return generate_sxpb(context.native_data)
+    elif format_name == "sxpb.compact":
+        return generate_sxpb(context.native_data, mode="compact")
+    elif format_name == "sxpb.oneline":
+        return generate_sxpb(context.native_data, mode="oneline")
+    elif format_name == "txtpb":
+        return generate_txtpb(context.data_list, context.root_element_name)
+    elif format_name == "txtpb.compact":
+        return generate_txtpb(
+            context.data_list, context.root_element_name, mode="compact"
+        )
+    elif format_name == "txtpb.oneline":
+        return generate_txtpb(
+            context.data_list, context.root_element_name, mode="oneline"
+        )
+    elif format_name == "yaml":
+        return generate_yaml(context.plain_data_dict)
+    elif format_name == "xml":
+        return generate_xml(context.data_list, context.root_element_name)
+    elif format_name == "xml.compact":
+        return generate_xml(
+            context.data_list, context.root_element_name, mode="compact"
+        )
+    else:
+        raise ValueError(f"Unsupported format: {format_name}")
+
+
+def generate_all_outputs(context: DataContext) -> Dict[str, str]:
+    """Generates outputs for all supported formats."""
+    outputs = {}
+    for format_name in SUPPORTED_FORMATS:
+        result = generate_formatted_output(format_name, context)
+        if result is not None:
+            outputs[format_name] = result
+    return outputs
 
 
 # From https://stackoverflow.com/a/21912744
@@ -226,7 +325,7 @@ def _build_txtpb_string_recursive(data: Any, indent_level: int, mode: str) -> st
 
 def generate_sxpb(data: Any, mode: str = "pretty") -> str:
     """
-    Generates an SXPB representation from a list of Python objects.
+    Generates an SxPB representation from a list of Python objects.
     - 'pretty': Standard human-readable format.
     - 'oneline': A single line with minimal spacing.
     - 'compact': A single line with no extra spaces.
@@ -237,7 +336,7 @@ def generate_sxpb(data: Any, mode: str = "pretty") -> str:
         return sxpb.dumps(data, indent=0)
     elif mode == "compact":
         return sxpb.dumps(data, indent=-1)
-    raise ValueError(f"Unknown SXPB generation mode: {mode}")
+    raise ValueError(f"Unknown SxPB generation mode: {mode}")
 
 
 if __name__ == "__main__":

@@ -4,12 +4,12 @@ version = "0.0.0"
 authors = [
 ]
 dependencies = [
-    "pyyaml>=6.0.3",
-    "llama-cpp-python>=0.3.16",
     "huggingface-hub>=0.20.3",
-    "psutil>=5.9.8",
+    "llama-cpp-python>=0.3.16",
     "openai>=1.0.0",
-    "sxpb @ git+https://github.com/sxproto/sxpb-py@f93b5f0ef53f31773f9ac0721c8ef02e3c0cbbd0",
+    "psutil>=5.9.8",
+    "pyyaml>=6.0.3",
+    "sxpb @ git+https://github.com/sxproto/sxpb-py@3988d18e54179409fa743a1dcce5ab00969f6745",
 ]
 requires-python = ">=3.9"
 
@@ -31,6 +31,7 @@ pythonpath = ["."]
 
 [tool.pdm.scripts]
 benchmark = "python -m src.run_benchmark"
+q2a = "python -m src.q2a"
 check-format = "ruff check"
 check-type = "ty check"
 tidy = "ruff format"
