@@ -6,6 +6,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import OrderedDict
 import json
+from toon_format import encode
 from typing import Any, Dict, List, Optional
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
@@ -44,6 +45,7 @@ SUPPORTED_FORMATS = sorted(
         "sxpb",
         "sxpb.compact",
         "sxpb.oneline",
+        "toon",
         "txtpb",
         "txtpb.compact",
         "txtpb.oneline",
@@ -79,6 +81,8 @@ def generate_formatted_output(format_name: str, context: DataContext) -> Optiona
         return generate_sxpb(context.native_data, mode="compact")
     elif format_name == "sxpb.oneline":
         return generate_sxpb(context.native_data, mode="oneline")
+    elif format_name == "toon":
+        return generate_toon(context.plain_data_dict)
     elif format_name == "txtpb":
         return generate_txtpb(context.data_list, context.root_element_name)
     elif format_name == "txtpb.compact":
@@ -337,6 +341,16 @@ def generate_sxpb(data: Any, mode: str = "pretty") -> str:
     elif mode == "compact":
         return sxpb.dumps(data, indent=-1)
     raise ValueError(f"Unknown SxPB generation mode: {mode}")
+
+
+def generate_toon(data: Any, mode: str = "pretty") -> str:
+    """
+    Generates a TOON representation from a python object.
+    - 'pretty': Standard human-readable format.
+    """
+    if mode != "pretty":
+        raise ValueError(f"Unknown TOON generation mode: {mode}")
+    return encode(data)
 
 
 if __name__ == "__main__":

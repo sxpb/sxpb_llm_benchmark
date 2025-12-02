@@ -9,7 +9,8 @@ dependencies = [
     "openai>=1.0.0",
     "psutil>=5.9.8",
     "pyyaml>=6.0.3",
-    "sxpb @ git+https://github.com/sxproto/sxpb-py@3988d18e54179409fa743a1dcce5ab00969f6745",
+    "sxpb @ git+https://github.com/sxproto/sxpb-py@4a2ce27ba7863a22ca298b9e32cfa54f2fe6716b",
+    "toon-format @ git+https://github.com/toon-format/toon-python.git",
 ]
 requires-python = ">=3.9"
 
@@ -22,6 +23,7 @@ dev = [
     "pytest",
     "ruff",
     "ty",
+    "faker",
 ]
 
 [tool.pytest.ini_options]
@@ -32,6 +34,7 @@ pythonpath = ["."]
 [tool.pdm.scripts]
 benchmark = "python -m src.run_benchmark"
 q2a = "python -m src.q2a"
+toon-benchmark = "python -m src.bench.toon.run_benchmark"
 check-format = "ruff check"
 check-type = "ty check"
 tidy = "ruff format"

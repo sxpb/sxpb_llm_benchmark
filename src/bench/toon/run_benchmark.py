@@ -1,0 +1,133 @@
+import argparse
+from src.bench.toon.datasets import get_toon_datasets
+from src.bench.toon.questions import generate_questions
+from src.bench.toon.evaluation import evaluate_question
+from src.bench.toon.storage import (
+    save_model_results,
+    has_model_results,
+    get_all_model_results,
+)
+from src.bench.toon.report import calculate_format_results, generate_toon_report
+from src.generate_data import generate_json, generate_yaml, generate_xml, generate_toon
+from src.llm_api import get_llm_api, add_llm_args
+from typing import Dict, Any
+import sxpb
+
+
+def format_xml(data: Dict[str, Any], dataset_name: str) -> str:
+    # Heuristic: if data has exactly 1 key and the value is a list,
+    # assume it's a wrapper and the key is the root element name.
+    if len(data) == 1 and isinstance(list(data.values())[0], list):
+        root_name = list(data.keys())[0]
+        return generate_xml(data[root_name], root_element_name=root_name)
+
+    # Otherwise, wrap the data in a list and use the dataset name (or "root") as the element name.
+    # We use "root" default because generate_xml strips the top-level <root> tag,
+    # leaving us with a fragment if we pass a list of items.
+    # However, here we pass a single item [data], so generate_xml creates <root_name>...</root_name>.
+
+    root_name = dataset_name if dataset_name else "root"
+    # specific fix for nested-config to look nicer
+    if dataset_name == "nested-config":
+        root_name = "config"
+
+    return generate_xml([data], root_element_name=root_name)
+
+
+def main():
+    parser = argparse.ArgumentParser(description="Run retrieval toon benchmark.")
+    add_llm_args(parser)
+    parser.add_argument(
+        "--fullsize-ratio",
+        "--fullsize_ratio",
+        type=float,
+        default=1.0,
+        help="Ratio to scale the dataset sizes.",
+    )
+    parser.add_argument(
+        "--use-json-answer",
+        "--use_json_answer",
+        action="store_true",
+        help="Request the answer in JSON format.",
+    )
+    args = parser.parse_args()
+
+    llm_api = get_llm_api(
+        model=args.model,
+        api_key=args.api_key,
+        api_url=args.api_url,
+        completion_token_limit=args.completion_token_limit,
+        ollama_compatibility_on=args.ollama_compatibility_on,
+    )
+
+    model_id = args.model.replace("/", "_")
+
+    toon_datasets = get_toon_datasets(args.fullsize_ratio)
+
+    questions = generate_questions(toon_datasets)
+
+    formatters = {
+        "sxpb": lambda data, _: sxpb.dumps(data, indent=1),
+        "json": lambda data, _: generate_json(data, mode="pretty"),
+        "yaml": lambda data, _: generate_yaml(data),
+        "toon": lambda data, _: generate_toon(data, mode="pretty"),
+        "xml": format_xml,
+    }
+
+    if has_model_results(model_id):
+        print(f"Results for model {model_id} already exist. Skipping.")
+    else:
+        results = []
+        questions_by_dataset = {}
+        for q in questions:
+            dataset_name = q["dataset"]
+            if dataset_name not in questions_by_dataset:
+                questions_by_dataset[dataset_name] = []
+            questions_by_dataset[dataset_name].append(q)
+
+        total_evaluations = len(questions) * len(formatters)
+        evaluations_processed = 0
+        for dataset in toon_datasets:
+            dataset_name = dataset["name"]
+            print(f"Running benchmark for dataset: {dataset_name}")
+            dataset_questions = questions_by_dataset.get(dataset_name, [])
+            if not dataset_questions:
+                continue
+
+            for format_name, formatter in formatters.items():
+                print(f"  Running benchmark for format: {format_name}")
+                formatted_data = formatter(dataset["data"], dataset_name)
+                for question in dataset_questions:
+                    evaluations_processed += 1
+                    print(
+                        f"    Running {evaluations_processed}/{total_evaluations}: {question['prompt']}",
+                        end="",
+                        flush=True,
+                    )
+                    result = evaluate_question(
+                        question,
+                        format_name,
+                        formatted_data,
+                        llm_api,
+                        use_json_output=args.use_json_answer,
+                    )
+                    if result["isCorrect"]:
+                        print(f" -- {question['id']} PASS")
+                    else:
+                        print(f" -- {question['id']} FAIL")
+                    results.append(result)
+
+        save_model_results(model_id, results)
+
+    all_results = get_all_model_results()
+    flat_results = [item for sublist in all_results.values() for item in sublist]
+
+    format_results = calculate_format_results(flat_results)
+    report = generate_toon_report(flat_results, format_results)
+
+    with open("results/toon-benchmark.md", "w") as f:
+        f.write(report)
+
+
+if __name__ == "__main__":
+    main()
