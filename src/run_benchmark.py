@@ -283,9 +283,6 @@ def main() -> None:
 
     log_context_file = setup_logging(args.log_dir)
 
-    if args.api_url and not args.api_key:
-        raise ValueError("--api-key is required when using --api-url.")
-
     llm = get_llm_api(
         model=args.model,
         api_key=args.api_key,

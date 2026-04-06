@@ -4,12 +4,9 @@ version = "0.0.0"
 authors = [
 ]
 dependencies = [
-    "huggingface-hub>=0.20.3",
-    "llama-cpp-python>=0.3.16",
     "openai>=1.0.0",
-    "psutil>=5.9.8",
     "pyyaml>=6.0.3",
-    "sxpb @ git+https://github.com/sxproto/sxpb-py@3988d18e54179409fa743a1dcce5ab00969f6745",
+    "sxpb @ git+https://github.com/sxproto/sxpb-py@04fbc53342cb7c7dd75166be955253711966f5e2",
 ]
 requires-python = ">=3.9"
 
@@ -37,3 +34,4 @@ check-type = "ty check"
 tidy = "ruff format"
 lint = {composite = ["check-format", "check-type"]}
 test = "pytest"
+tidytest = {composite = ["test", "tidy", "lint"]}

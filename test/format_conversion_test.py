@@ -2,6 +2,7 @@ import os
 import sxpb
 import yaml
 import json
+from typing import cast
 from src.generate_data import generate_jsonl, generate_txtpb, generate_xml
 from sxpb.jsonutil import to_plain_types
 
@@ -71,7 +72,7 @@ def test_format_conversions():
 
         # Get the root element name and the data list.
         assert isinstance(plain_data, dict)
-        root_element_name = list(plain_data.keys())[0]
+        root_element_name = cast(str, list(plain_data.keys())[0])
         data_list = plain_data[root_element_name]
 
         # 4. Test XML conversion

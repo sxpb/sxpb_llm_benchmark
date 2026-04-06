@@ -6,7 +6,7 @@ import xml.etree.ElementTree as ET
 from xml.dom import minidom
 from collections import OrderedDict
 import json
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 script_dir = os.path.dirname(os.path.abspath(__file__))
 
@@ -14,6 +14,12 @@ DataType = List[Dict[str, Any]]
 
 
 class DataContext:
+    native_data: Any
+    plain_data: Any
+    plain_data_dict: Dict[str, Any]
+    root_element_name: str
+    data_list: Any
+
     def __init__(self, native_data: Any):
         self.native_data = native_data
         self.plain_data = sxpb.jsonutil.to_plain_types(native_data)
@@ -26,7 +32,7 @@ class DataContext:
         if not self.plain_data_dict:
             raise ValueError("Data dictionary is empty.")
 
-        self.root_element_name = list(self.plain_data_dict.keys())[0]
+        self.root_element_name = cast(str, list(self.plain_data_dict.keys())[0])
         self.data_list = self.plain_data_dict[self.root_element_name]
 
         # While we don't strictly enforce data_list being a list here,
